@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<styles>	
+	<!-- NORMAL -->
+    <style name="NORMAL" red="00" green="00" blue="00" bold="false"  />
+	
+	<style name="STRING_S" red="7F" green="00" blue="7F" bold="false" />
+	<style name="STRING_D" red="7F" green="00" blue="7F" bold="false" italic="true" />
+	<style name="OBJECT" red="7F" green="7F" blue="7F" bold="false" italic="true" />
+	<style name="KEYWORD" red="00" green="00" blue="7F" bold="true" />
+	<style name="ML_COMMENT" red="30" green="60" blue="A0" bold="false" />
+	<style name="SL_COMMENT" red="40" green="80" blue="20" bold="false" />
+	<style name="NUMBER" red="00" green="7F" blue="7F" bold="false" />
+
+</styles>
