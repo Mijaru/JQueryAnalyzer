@@ -34,6 +34,9 @@ http://mvnrepository.com/artifact/javolution/javolution/5.5.1
 http://mvnrepository.com/artifact/org.jdom/jdom2/2.0.5
 		https://raw.github.com/hunterhacker/jdom/master/LICENSE.txt
 
+* javax.mail.jar
+https://java.net/projects/javamail/pages/Home
+		https://glassfish.java.net/public/CDDL+GPL_1_1.html
 
 
 ENG:
@@ -70,3 +73,6 @@ http://mvnrepository.com/artifact/javolution/javolution/5.5.1
 http://mvnrepository.com/artifact/org.jdom/jdom2/2.0.5
 		https://raw.github.com/hunterhacker/jdom/master/LICENSE.txt
 
+* javax.mail.jar
+https://java.net/projects/javamail/pages/Home
+		https://glassfish.java.net/public/CDDL+GPL_1_1.html
