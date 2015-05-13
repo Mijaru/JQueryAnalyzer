@@ -1,4 +1,4 @@
-package Components.Programs;
+package Components.Programs.Geral;
 
 
 import java.awt.Color;
@@ -27,7 +27,7 @@ import Components.MainWindow;
 import Components.SQLConnectionManager;
 import Components.MainWindowComponents.JQDialog;
 
-public class MR_CheckTables {
+public class CheckTables {
 	private JQDialog _FRAME;
 	private Font _FONT = null;
 	private JTextArea _LOG;
@@ -35,14 +35,14 @@ public class MR_CheckTables {
 	private Thread _ACTIVE_THREAD;
 	
 	/** -CONSTRUTOR- */
-	public MR_CheckTables(SQLConnectionManager connection) {
+	public CheckTables(SQLConnectionManager connection) {
 		_CONNECTION = connection;
 	}
 
 	public void startPrograma() {
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
-		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQueryAnalizer [MRDigital] - Verifica o status atual de cada tabela.");
+		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Verifica o status atual de cada tabela.");
 		_FRAME.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		_FRAME.setPreferredSize(new Dimension(550, 400));
 		_FRAME.setMaximumSize(new Dimension(550, 400));
@@ -66,6 +66,7 @@ public class MR_CheckTables {
 		
 		_LOG = new JTextArea();
 		_LOG.setFont(new Font("Courier New", Font.ROMAN_BASELINE, 14));
+		_LOG.setText("INSTRUÇÕES:\n-----------\n	MySQL: Ao clicar em iniciar o script vai efetuar um\ndiagnóstico de cada uma das tabelas listadas na base\nselecionada.\n	Microsoft SQL Server: O script automaticamente vai\nrodar uma rotina para reparar todas as tabelas listadas na\nbase selecionada.\n");
 		JScrollPane b1 = new JScrollPane(_LOG);
 		b1.setBounds(10, 10, 525, 310);
 		b1.setBorder(new LineBorder(Color.GRAY, 1, true));
@@ -107,6 +108,15 @@ public class MR_CheckTables {
 						}
 					}
 					_LOG.append("\n» Executando verificação nas tabelas selecionadas!\n");
+					
+					switch (_CONNECTION.getServerType()) {
+						case 3: // -- Microsoft SQL Server
+							String item = "ALTER DATABASE " + _CONNECTION.getDatabase() + " SET single_user WITH no_wait;";
+							_LOG.append("   » " + item + "\n");
+							Exception e = _CONNECTION.executeUpdate(item);
+							_LOG.append("	> " + (e == null ? "OK" : "Erro: " + e.getCause()) + "\n");
+							break;
+					}
 					Execute exec = new Execute();
 					_ACTIVE_THREAD = new Thread(exec);
 					_ACTIVE_THREAD.start();
@@ -138,16 +148,36 @@ public class MR_CheckTables {
 			try {
 				ResultSet rs = null;
 				for (String table : list) {
-					item = "CHECK TABLE " + table.trim() + " EXTENDED";
-					rs = _CONNECTION.executeQuery(item);
-					_LOG.append("   » " + item + "\n");
-					if (rs == null) {
-						_LOG.append("    - erro detectado: " + _CONNECTION.getLastError() + "\n");
+					switch (_CONNECTION.getServerType()) {
+						case 1:
+							item = "CHECK TABLE `" + table.trim() + "` EXTENDED";
+							rs = _CONNECTION.executeQuery(item);
+							_LOG.append("   » " + item + "\n");
+							if (rs == null) {
+								_LOG.append("	> Erro: " + _CONNECTION.getLastError() + "\n");
+							}
+							while (rs != null && rs.next()) {
+								_LOG.append("	> Table: " + rs.getString(1) + "\n\t> Operation: " + rs.getString(2) + "\n\t> Type: " + rs.getString(3) + "\n\t> Text: " + rs.getString(4) + "\n\n");
+							}
+							rs.close();
+							break;
+						case 3:
+							item = "DBCC CHECKTABLE ('" +table.trim()+ "', REPAIR_ALLOW_DATA_LOSS);";
+							_LOG.append("   » " + item + "\n");
+							Exception e = _CONNECTION.executeUpdate(item);
+							if (e != null) { 
+								_LOG.append("		> Erro: " + e.getMessage() + " [" +e.getCause()+ "]\n");
+							}
+							break;
 					}
-					while (rs != null && rs.next()) {
-						_LOG.append("    - table: " + rs.getString(1) + "\n    - operation: " + rs.getString(2) + "\n    - type: " + rs.getString(3) + "\n    - text: " + rs.getString(4) + "\n\n");
-					}
-					rs.close();
+				}
+				switch (_CONNECTION.getServerType()) {
+					case 3: // -- Microsoft SQL Server
+						item = "ALTER DATABASE " + _CONNECTION.getDatabase() + " SET multi_user WITH no_wait;";
+						_LOG.append("   » " + item + "\n");
+						Exception e = _CONNECTION.executeUpdate(item);
+						_LOG.append("	> " + (e == null ? "OK" : "Erro: " + e.getMessage() + " [" +e.getCause()+ "]") + "\n");
+						break;
 				}
 				_LOG.append("» Concluído!");
 			}

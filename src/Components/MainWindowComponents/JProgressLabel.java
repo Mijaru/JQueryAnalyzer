@@ -104,18 +104,22 @@ public class JProgressLabel extends JPanel {
 		}
 		
 		public void setItemProgress(float perc) {
-			Dimension size = label_2.getSize();
-			size.width  = Math.max(size.width, 1);
-			size.height = Math.max(size.height, 1);
-			ImageIcon high = new ImageIcon(ClassLoader.getSystemResource("progress_green.png"));
-			int x = (int)(size.width * perc) / 100;
-			high.setImage(high.getImage().getScaledInstance(x <= 0 ? 1 : x, 3, 100));
-			BufferedImage progress = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB);
-			progress.setAccelerationPriority(1.f);
-			Graphics g = progress.getGraphics();
-			g.drawImage(icon_2.getImage(), 0, 0, null);
-			g.drawImage(high.getImage(), 0, size.height - 3, null);
-			g.dispose();
-			label_2.setIcon(new ImageIcon(progress));
+			SwingUtilities.invokeLater(new Runnable(){
+				public void run() {
+					Dimension size = label_2.getSize();
+					size.width  = Math.max(size.width, 1);
+					size.height = Math.max(size.height, 1);
+					ImageIcon high = new ImageIcon(ClassLoader.getSystemResource("progress_green.png"));
+					int x = (int)(size.width * perc) / 100;
+					high.setImage(high.getImage().getScaledInstance(x <= 0 ? 1 : x, 3, 100));
+					BufferedImage progress = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB);
+					progress.setAccelerationPriority(1.f);
+					Graphics g = progress.getGraphics();
+					g.drawImage(icon_2.getImage(), 0, 0, null);
+					g.drawImage(high.getImage(), 0, size.height - 3, null);
+					g.dispose();
+					label_2.setIcon(new ImageIcon(progress));
+				}
+			});
 		}
 	}

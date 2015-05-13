@@ -387,20 +387,17 @@ public class SQLConnectionManager {
 			Statement st = _connection.createStatement();;
 			switch (getServerType()) {
 				case 0:
-					//rs = executeQuery("SHOW DATABASES");
 					st.executeQuery("SHOW DATABASES");
 					break;
 				case 1:
-					//rs = executeQuery("SELECT username FROM dba_users WHERE account_status LIKE '%OPEN%'");
 					st.executeQuery("SELECT username FROM dba_users WHERE account_status LIKE '%OPEN%'");
 					break;
 				case 2:
-					//rs = executeQuery("SELECT pg_database.datname FROM pg_database UNION SELECT pg_database.datname FROM pg_database WHERE pg_database.datdba NOT IN (SELECT usesysid FROM pg_user) ORDER BY 1");
 					st.executeQuery("SELECT pg_database.datname FROM pg_database UNION SELECT pg_database.datname FROM pg_database WHERE pg_database.datdba NOT IN (SELECT usesysid FROM pg_user) ORDER BY 1");
 					break;
 				case 3:
-					//rs = executeQuery("EXEC sp_databases");
-					st.executeQuery("EXEC sp_databases");
+					st.executeQuery("SELECT name FROM master.dbo.sysdatabases");
+					//st.executeQuery("EXEC sp_databases");
 					break;
 			}
 			if (!st.isClosed()) {
@@ -708,7 +705,7 @@ public class SQLConnectionManager {
 	/** DB_MYSQL	 = 0						 			  */
 	/** DB_ORACLE 	 = 1									  */
 	/** DB_POSTGREE	 = 2									  */
-	/** DB_SQLSERVER = 0									  */
+	/** DB_SQLSERVER = 3									  */
 	/**	----------------------------------------------------- */
 	public int getServerType() {
 		return _server_type;

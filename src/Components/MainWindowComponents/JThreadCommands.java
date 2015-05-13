@@ -1,6 +1,7 @@
 package Components.MainWindowComponents;
 
 import java.awt.Component;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -12,6 +13,8 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
+
+import com.sun.org.apache.xml.internal.security.utils.Base64;
 
 import javolution.util.FastList;
 import Components.MainWindow;
@@ -149,12 +152,31 @@ public class JThreadCommands implements Runnable {
 													break;
 												case Types.DECIMAL:
 												case Types.FLOAT:
+												case Types.NUMERIC:	// SQL SERVER
 													record.add(rs.getFloat(j));
 													break;
 												case Types.CHAR:
 												case Types.VARCHAR:
 												case Types.LONGVARCHAR:
+												case Types.CLOB:	// SQL SERVER
 													record.add(rs.getString(j));
+													break;
+												case Types.BLOB:	// SQL SERVER
+												case Types.BINARY:
+													InputStream stream = rs.getBinaryStream(j);
+													try {
+														if (stream == null) {
+															record.add(rs.getString(j));
+														}
+														else {
+															byte[] data = new byte[stream.available()];
+															stream.read(data, 0, data.length);
+															record.add(new String(Base64.encode(data)));	
+														}
+													}
+													catch (Exception e) {
+														e.printStackTrace();
+													}
 													break;
 												default:
 													System.out.println("JThreadCommands.run() ~ [CASE 2] -> ColumnName: "  + meta.getColumnName(j) + ", ColumnType: " + meta.getColumnType(j) + ", ColumnClassName: " + meta.getColumnTypeName(j));

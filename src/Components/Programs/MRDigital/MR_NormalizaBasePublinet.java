@@ -1,4 +1,4 @@
-package Components.Programs;
+package Components.Programs.MRDigital;
 
 
 import java.awt.Color;
@@ -27,7 +27,7 @@ import Components.MainWindow;
 import Components.SQLConnectionManager;
 import Components.MainWindowComponents.JQDialog;
 
-public class ColumnFormat2 {
+public class MR_NormalizaBasePublinet {
 	private JQDialog _FRAME;
 	private Font _FONT = null;
 	private JTextArea _LOG;
@@ -38,14 +38,14 @@ public class ColumnFormat2 {
 	private int _THREAD_PROCESS;
 	
 	/** -CONSTRUTOR- */
-	public ColumnFormat2(SQLConnectionManager connection) {
+	public MR_NormalizaBasePublinet(SQLConnectionManager connection) {
 		_CONNECTION = connection;
 	}
 
 	public void startPrograma() {
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
-		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQueryAnalizer [MRDigital] - Normaliza banco de dados para instalação do PubliNET");
+		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer [MRDigital] - Normaliza banco de dados para instalação do PUBLINET");
 		_FRAME.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		_FRAME.setPreferredSize(new Dimension(550, 400));
 		_FRAME.setMaximumSize(new Dimension(550, 400));
@@ -86,7 +86,8 @@ public class ColumnFormat2 {
 		});
 		
 		_LOG = new JTextArea();
-		_LOG.setFont(new Font("Courier New", Font.ROMAN_BASELINE, 14));
+		_LOG.setFont(_FONT);
+		_LOG.setText("[#] Este script ajusta o banco de dados selecionado para a instalação do PUBLINET.\n[>] Os seguintes campos serão ajustados e/ou adicionados conforme necessário:\n         » USMANU : VARCHAR(12)\n         » DTMANU : VARCHAR(6)\n         » HRMANU : VARCHAR(6)\n         » OPMANU : VARCHAR(1)\n         » DTINCLUSAO : DATETIME\n         » USINCLUSAO : VARCHAR(12)\n");
 		JScrollPane b1 = new JScrollPane(_LOG);
 		b1.setBounds(10, 10, 525, 310);
 		b1.setBorder(new LineBorder(Color.GRAY, 1, true));
@@ -117,19 +118,16 @@ public class ColumnFormat2 {
 		_FRAME.add(executar);
 		
 		executar.addActionListener(new ActionListener() {
-
-			@Override
 			public void actionPerformed(ActionEvent b) {
-				
 				_TABLE_LIST_CHECKED = 0;
 				_THREAD_PROCESS = 0;
-				
+				_LOG.append("---\n");
+				_LOG.append("» Iniciando o processamento das tabelas:\n");
 				try {
 					List<String> list = _CONNECTION.getTables();
 					Iterator<String> iterator = list.iterator();
 					_THREAD_LIST = new Thread[list.size()];
 					_TABLE_LIST_SIZE = list.size();
-					_LOG.append("[#] Iniciando verificação das tabelas, buscando campos: DTINCLUSAO, USINCLUSAO, USMANU, DTMANU, HRMANU, OPMANU e ajustando estes campos conforme necessário.\n *** Padrões adotados:\n      USMANU => VarChar(12)\n      DTMANU => VarChar(6)\n       OPMANU => VarChar(1)\n      USINCLUSAO => VarChar(12) \n      DTINCLUSAO => DATETIME\n[#] "+list.size()+" tabelas encontradas.\n");
 					while (iterator.hasNext()) {
 						Execute e = new Execute(iterator.next());
 						Thread t = new Thread(e);
@@ -151,7 +149,9 @@ public class ColumnFormat2 {
 	private class ColumnData {
 		@SuppressWarnings("unused")
 		private String column_name;
+		@SuppressWarnings("unused")
 		public int column_type;
+		@SuppressWarnings("unused")
 		public int column_size;
 		public int status; // 0 = ok | 1 = add | 2 = modify
 		
@@ -170,7 +170,7 @@ public class ColumnFormat2 {
 		}
 		@Override
 		public void run() {
-			_LOG.append("» "+((100.f * _TABLE_LIST_CHECKED / _TABLE_LIST_SIZE)+"00000").substring(0, 5)+"% concluido - processando a tabela `"+table.toUpperCase()+"`\n");
+			_LOG.append("         » "+((100.f * _TABLE_LIST_CHECKED / _TABLE_LIST_SIZE)+"00000").substring(0, 5)+"% Concluído - Processando a tabela `"+table.toUpperCase()+"`\n");
 			Exception pass = null;
 			try {
 				ResultSet rs = _CONNECTION.executeQuery("SELECT * FROM " + table + " WHERE 1=0");
@@ -263,77 +263,167 @@ public class ColumnFormat2 {
 					}
 				}
 				String sql = null;
-				sql = "ALTER TABLE " + table + " " + (dtinclusao.status == 2 ? "MODIFY" : "ADD") + " COLUMN DTINCLUSAO DATETIME NULL";
+				sql = "ALTER TABLE [table] [action] [column] [type]";
 				if (dtinclusao.status != 0) {
+					switch (_CONNECTION.getServerType()) {
+						case SQLConnectionManager.DB_MYSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (dtinclusao.status == 2 ? "MODIFY COLUMN" : "ADD COLUMN"));
+							sql = sql.replace("[column]", "DTINCLUSAO");
+							sql = sql.replace("[type]", "DATETIME");
+							break;
+						case SQLConnectionManager.DB_MSSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (dtinclusao.status == 2 ? "ALTER COLUMN" : "ADD"));
+							sql = sql.replace("[column]", "DTINCLUSAO");
+							sql = sql.replace("[type]", "DATETIME");
+							break;
+					}
 					pass = _CONNECTION.executeUpdate(sql);
 				}
 				if (pass == null) {
-					_LOG.append("     DTINCLUSAO - " + (dtinclusao.status == 0 ? "VÁLIDO" : (sql.contains("MODIFY") ? "ALTERADO" : "ADICIONADO")) + " *** OK.\n");				
+					_LOG.append("                  » DTINCLUSAO : " + (dtinclusao.status == 0 ? "VÁLIDO" : (dtinclusao.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
 				}
 				else {
-					_LOG.append("     DTINCLUSAO -> " + sql + " *** [" + pass.getMessage() + "] \n");	
+					_LOG.append("                  » DTINCLUSAO > " + sql + " *** Exception: " + pass.getMessage() + " [" +pass.getCause()+ "].\n");	
 				}
-				// --
-				sql = "ALTER TABLE " + table + " " + (usinclusao.status == 2 ? "MODIFY" : "ADD") + " COLUMN USINCLUSAO VARCHAR(12)";
+				
+				// ---
+				
+				sql = "ALTER TABLE [table] [action] [column] [type]";
 				if (usinclusao.status != 0) {
+					switch (_CONNECTION.getServerType()) {
+						case SQLConnectionManager.DB_MYSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (usinclusao.status == 2 ? "MODIFY COLUMN" : "ADD COLUMN"));
+							sql = sql.replace("[column]", "USINCLUSAO");
+							sql = sql.replace("[type]", "VARCHAR(12)");
+							break;
+						case SQLConnectionManager.DB_MSSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (usinclusao.status == 2 ? "ALTER COLUMN" : "ADD"));
+							sql = sql.replace("[column]", "USINCLUSAO");
+							sql = sql.replace("[type]", "VARCHAR(12)");
+							break;
+					}
 					pass = _CONNECTION.executeUpdate(sql);
 				}
 				if (pass == null) {
-					_LOG.append("     USINCLUSAO - " + (usinclusao.status == 0 ? "VÁLIDO" : (sql.contains("MODIFY") ? "ALTERADO" : "ADICIONADO")) + " *** OK.\n");				
+					_LOG.append("                  » USINCLUSAO : " + (usinclusao.status == 0 ? "VÁLIDO" : (usinclusao.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
 				}
 				else {
-					_LOG.append("     USINCLUSAO -> " + sql + " *** [" + pass.getMessage() + "] -> " + usinclusao.status + " " + usinclusao.column_type + " " + usinclusao.column_size + " \n");
-					System.out.println("STATUS:");
-					System.out.println(usinclusao.status);
-					System.out.println("COLUMN_TYPE:");
-					System.out.println(usinclusao.column_type);
-					System.out.println("COLUMN_SIZE:");
-					System.out.println(usinclusao.column_size);
+					_LOG.append("                  » USINCLUSAO > " + sql + " *** Exception: " + pass.getMessage() + " [" +pass.getCause()+ "].\n");	
 				}
-				// --
-				sql = "ALTER TABLE " + table + " " + (usmanu.status == 2 ? "MODIFY" : "ADD") + " COLUMN USMANU VARCHAR(12)";
+
+				// ---
+				
+				sql = "ALTER TABLE [table] [action] [column] [type]";
 				if (usmanu.status != 0) {
+					switch (_CONNECTION.getServerType()) {
+						case SQLConnectionManager.DB_MYSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (usmanu.status == 2 ? "MODIFY COLUMN" : "ADD COLUMN"));
+							sql = sql.replace("[column]", "USMANU");
+							sql = sql.replace("[type]", "VARCHAR(12)");
+							break;
+						case SQLConnectionManager.DB_MSSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (usmanu.status == 2 ? "ALTER COLUMN" : "ADD"));
+							sql = sql.replace("[column]", "USMANU");
+							sql = sql.replace("[type]", "VARCHAR(12)");
+							break;
+					}
 					pass = _CONNECTION.executeUpdate(sql);
 				}
 				if (pass == null) {
-					_LOG.append("     USMANU - " + (usmanu.status == 0 ? "VÁLIDO" : (sql.contains("MODIFY") ? "ALTERADO" : "ADICIONADO")) + " *** OK.\n");				
+					_LOG.append("                  » USMANU : " + (usmanu.status == 0 ? "VÁLIDO" : (usmanu.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
 				}
 				else {
-					_LOG.append("     USMANU -> " + sql + " *** [" + pass.getMessage() + "] \n");	
+					_LOG.append("                  » USMANU > " + sql + " *** Exception: " + pass.getMessage() + " [" +pass.getCause()+ "].\n");	
 				}
-				// --
-				sql = "ALTER TABLE " + table + " " + (dtmanu.status == 2 ? "MODIFY" : "ADD") + " COLUMN DTMANU VARCHAR(6)";
+
+				// ---
+				
+				sql = "ALTER TABLE [table] [action] [column] [type]";
 				if (dtmanu.status != 0) {
+					switch (_CONNECTION.getServerType()) {
+						case SQLConnectionManager.DB_MYSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (dtmanu.status == 2 ? "MODIFY COLUMN" : "ADD COLUMN"));
+							sql = sql.replace("[column]", "DTMANU");
+							sql = sql.replace("[type]", "VARCHAR(6)");
+							break;
+						case SQLConnectionManager.DB_MSSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (dtmanu.status == 2 ? "ALTER COLUMN" : "ADD"));
+							sql = sql.replace("[column]", "DTMANU");
+							sql = sql.replace("[type]", "VARCHAR(6)");
+							break;
+					}
 					pass = _CONNECTION.executeUpdate(sql);
 				}
 				if (pass == null) {
-					_LOG.append("     DTMANU - " + (dtmanu.status == 0 ? "VÁLIDO" : (sql.contains("MODIFY") ? "ALTERADO" : "ADICIONADO")) + " *** OK.\n");
+					_LOG.append("                  » DTMANU : " + (dtmanu.status == 0 ? "VÁLIDO" : (dtmanu.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
 				}
 				else {
-					_LOG.append("     DTMANU -> " + sql + " *** [" + pass.getMessage() + "] \n");	
+					_LOG.append("                  » DTMANU > " + sql + " *** Exception: " + pass.getMessage() + " [" +pass.getCause()+ "].\n");	
 				}
-				// --
-				sql = "ALTER TABLE " + table + " " + (hrmanu.status == 2 ? "MODIFY" : "ADD") + " COLUMN HRMANU VARCHAR(12)";
+
+				// ---
+				
+				sql = "ALTER TABLE [table] [action] [column] [type]";
 				if (hrmanu.status != 0) {
+					switch (_CONNECTION.getServerType()) {
+						case SQLConnectionManager.DB_MYSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (hrmanu.status == 2 ? "MODIFY COLUMN" : "ADD COLUMN"));
+							sql = sql.replace("[column]", "HRMANU");
+							sql = sql.replace("[type]", "VARCHAR(6)");
+							break;
+						case SQLConnectionManager.DB_MSSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (hrmanu.status == 2 ? "ALTER COLUMN" : "ADD"));
+							sql = sql.replace("[column]", "HRMANU");
+							sql = sql.replace("[type]", "VARCHAR(6)");
+							break;
+					}
 					pass = _CONNECTION.executeUpdate(sql);
 				}
 				if (pass == null) {
-					_LOG.append("     HRMANU - " + (hrmanu.status == 0 ? "VÁLIDO" : (sql.contains("MODIFY") ? "ALTERADO" : "ADICIONADO")) + " *** OK.\n");				
+					_LOG.append("                  » HRMANU : " + (hrmanu.status == 0 ? "VÁLIDO" : (hrmanu.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
 				}
 				else {
-					_LOG.append("     HRMANU -> " + sql + " *** [" + pass.getMessage() + "] \n");	
+					_LOG.append("                  » HRMANU > " + sql + " *** Exception: " + pass.getMessage() + " [" +pass.getCause()+ "].\n");	
 				}
-				// --
-				sql = "ALTER TABLE " + table + " " + (opmanu.status == 2 ? "MODIFY" : "ADD") + " COLUMN OPMANU VARCHAR(1)";
+
+				// ---
+				
+				sql = "ALTER TABLE [table] [action] [column] [type]";
 				if (opmanu.status != 0) {
+					switch (_CONNECTION.getServerType()) {
+						case SQLConnectionManager.DB_MYSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (opmanu.status == 2 ? "MODIFY COLUMN" : "ADD COLUMN"));
+							sql = sql.replace("[column]", "OPMANU");
+							sql = sql.replace("[type]", "VARCHAR(1)");
+							break;
+						case SQLConnectionManager.DB_MSSQL:
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[action]", (opmanu.status == 2 ? "ALTER COLUMN" : "ADD"));
+							sql = sql.replace("[column]", "OPMANU");
+							sql = sql.replace("[type]", "VARCHAR(1)");
+							break;
+					}
 					pass = _CONNECTION.executeUpdate(sql);
 				}
 				if (pass == null) {
-					_LOG.append("     OPMANU - " + (opmanu.status == 0 ? "VÁLIDO" : (sql.contains("MODIFY") ? "ALTERADO" : "ADICIONADO")) + " *** OK.\n");				
+					_LOG.append("                  » OPMANU : " + (opmanu.status == 0 ? "VÁLIDO" : (opmanu.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
 				}
 				else {
-					_LOG.append("     OPMANU -> " + sql + " *** [" + pass.getMessage() + "] \n");	
+					_LOG.append("                  » OPMANU > " + sql + " *** Exception: " + pass.getMessage() + " [" +pass.getCause()+ "].\n");	
 				}
+				_LOG.append("\n");
+				
 			}
 			catch (Exception e) {
 				_LOG.append(e.getMessage() + "\n");
@@ -341,7 +431,6 @@ public class ColumnFormat2 {
 			}			
 			_LOG.setCaretPosition(_LOG.getText().length());
 			if (_THREAD_PROCESS + 1 >= _TABLE_LIST_SIZE) {
-			//if (_TABLE_LIST_CHECKED >= _TABLE_LIST_SIZE) {
 				_LOG.append("[#] Verificação concluida!");
 				_THREAD_PROCESS = 0;
 			}

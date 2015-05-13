@@ -58,7 +58,7 @@ public class TableTreeCellRender implements TreeCellRenderer {
 				for (int i = 0; i < model.getChildCount(model.getRoot()); i++) {
 					if (model.getChild(model.getRoot(), i) instanceof DefaultMutableTreeNode) {
 						DefaultMutableTreeNode node = (DefaultMutableTreeNode)model.getChild(model.getRoot(), i);
-						if (model.getChild(node, row - 2) instanceof JCheckTreeNode) {
+						if (row - 2 >= 0 && model.getChild(node, row - 2) instanceof JCheckTreeNode) {
 							JCheckTreeNode select = (JCheckTreeNode)model.getChild(node, row - 2);
 							box.setSelected(select.isSelected());
 							switch (select.getType()) {

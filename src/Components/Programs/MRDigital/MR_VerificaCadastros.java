@@ -1,4 +1,4 @@
-package Components.Programs;
+package Components.Programs.MRDigital;
 
 
 
@@ -11,8 +11,8 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -37,7 +37,7 @@ public class MR_VerificaCadastros {
 		init();
 	}
 	
-	public void show() {
+	public void startProgram() {
 		if (_FRAME != null) {
 			if (_CONNECTION == null || (_CONNECTION != null && (!_CONNECTION.isConnected() || !_CONNECTION.isDatabaseSelected()))) {
 				JOptionPane.showMessageDialog(MainWindow.getMainFrame(), "Você deve selecionar uma database do publi antes de executar este programa!", "JQueryAnalizer - Aviso!", JOptionPane.OK_OPTION);
@@ -53,7 +53,7 @@ public class MR_VerificaCadastros {
 		
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
-		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQueryAnalizer - Módulo de verificação do cadastro de clientes e fornecedores");
+		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Módulo de verificação do cadastro de CLIENTES e FORENCEDORES");
 		_FRAME.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		_FRAME.setPreferredSize(new Dimension(550, 400));
 		_FRAME.setMaximumSize(new Dimension(550, 400));
@@ -112,7 +112,7 @@ public class MR_VerificaCadastros {
 		@Override
 		public void run() {
 			Connection con = null;
-			Statement st = null;
+			PreparedStatement st = null;
 			if (_CONNECTION == null || !_CONNECTION.isConnected()) {
 				JOptionPane.showMessageDialog(null, "<html>A conexão selecionada não está disponível.<br><i>Reestabeleça a conexão e tente novamente</i></html>", "jQueryAnalizer - Aviso!", JOptionPane.OK_OPTION);
 				return;
@@ -123,7 +123,7 @@ public class MR_VerificaCadastros {
 			try {
 				for (String tn : _CONNECTION.getTables()) {				
 					if (tn != null && tn.length() == 5 && (tn.contains("CLI") || tn.contains("cli"))) {
-						ResultSet c_data = _CONNECTION.executeQuery("SELECT * FROM "+tn);
+						ResultSet c_data = _CONNECTION.executeQuery("SELECT nome, codigo, razao_soc, cgc, endereco, municipio, estado, cep, telefone FROM "+tn);
 						int erros = 0;
 						_log.append("[#] Verificando a tabela '"+tn.toUpperCase()+"'.\n");
 						while(c_data.next()) {
@@ -195,8 +195,16 @@ public class MR_VerificaCadastros {
 							}
 							if (municipio != null) {
 								if (estado != null) {
-									st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-									ResultSet verify = st.executeQuery("SELECT * FROM cidades WHERE cidade LIKE '%"+municipio+"%' AND uf='"+estado+"'");
+									//st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+									//ResultSet verify = st.executeQuery("SELECT * FROM cidades WHERE cidade LIKE '%"+municipio+"%' AND uf='"+estado+"'");
+									st = con.prepareStatement("SELECT * FROM cidades WHERE cidade LIKE ? AND uf=?");
+									st.setString(1, ("%[municipio]%").replace("[municipio]", municipio));
+									st.setString(2, estado);
+									ResultSet verify = null;
+									if (st.execute()) {
+										verify = st.getResultSet();
+									}
+
 									if (verify != null) {
 										verify.last();
 									}
@@ -229,8 +237,9 @@ public class MR_VerificaCadastros {
 					/** ****************************************************** */
 					
 					if (tn != null && tn.length() == 5 && (tn.contains("FOR") || tn.contains("for"))) {
-						ResultSet f_data = _CONNECTION.executeQuery("SELECT * FROM "+tn);
+						ResultSet f_data = _CONNECTION.executeQuery("SELECT razao_soc, cgc, endereco, municipio, estado, cep, telefone, codigo, nome FROM "+tn);
 						int erros = 0;
+						_log.setCaretPosition(_log.getText().length());
 						_log.append("[#] Verificando a tabela '"+tn.toUpperCase()+"'.\n");
 						while(f_data.next()) {
 							String razao_social = f_data.getString("razao_soc");
@@ -301,10 +310,18 @@ public class MR_VerificaCadastros {
 							}
 							if (municipio != null) {
 								if (estado != null) {
-									st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-									ResultSet verify = st.executeQuery("SELECT * FROM cidades WHERE cidade LIKE '%"+municipio+"%' AND uf='"+estado+"'");
-									//ResultSet verify = _CONNECTION.executeQuery("SELECT * FROM cidades WHERE cidade LIKE '%"+municipio+"%' AND uf='"+estado+"'");
-									if (verify != null) verify.last();
+									st = con.prepareStatement("SELECT * FROM cidades WHERE cidade LIKE ? AND uf=?");
+									st.setString(1, ("%[municipio]%").replace("[municipio]", municipio));
+									st.setString(2, estado);
+									ResultSet verify = null;
+									if (st.execute()) {
+										verify = st.getResultSet();
+									}
+									//st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+									//ResultSet verify = st.executeQuery("SELECT * FROM cidades WHERE cidade LIKE '%"+municipio+"%' AND uf='"+estado+"'");
+									if (verify != null) {
+										verify.last();
+									}
 									if (verify != null && verify.getRow() == 0) {
 											list.append("»  Erro no campo 'MUNICIPIO', não foi possível encontrar o cadastro da cidade '"+municipio.toUpperCase()+"' no cadastro de cidades, esta cidade precisa ser incluída no cadastro. Utilieze o caminho: 'cadastro->tabelas auxiliares->cidades'.\n");
 											++erros;
@@ -322,10 +339,10 @@ public class MR_VerificaCadastros {
 								_log.append("\n"+f_data.getString("codigo")+" - "+f_data.getString("nome")+".\n");
 								_log.append(list.toString());
 							}
-															
+							_log.setCaretPosition(_log.getText().length());							
 						}
 						_log.append("[#] =========================================================================================\n");
-						_log.append("[#] Total de erros encontrados = "+erros+"\n[#] Fim da verificação para cadastros de FORNECEDORES.");
+						_log.append("[#] Total de erros encontrados = "+erros+"\n[#] Fim da verificação para cadastros de FORNECEDORES.\n\n");
 
 						JOptionPane.showMessageDialog(null, "Verificação concluída, foram encontrados: " + erros + " erros e/ou alertas nas tabelas de clientes e fornecedores.", "JQueryAnalizer - Verificação de cadastro de clientes e fornecedores", JOptionPane.OK_OPTION);
 					}

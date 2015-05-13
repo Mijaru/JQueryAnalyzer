@@ -1,4 +1,4 @@
-package Components.Programs;
+package Components.Programs.MRDigital;
 
 
 import java.awt.Color;
@@ -63,10 +63,10 @@ public class MR_AjustarEventosFatura {
 		_SUPPORT_NAMESPACES.add("http://www.portalfiscal.inf.br/nfe"); // -- Brasilia DF
 	}
 
-	public void startPrograma() {
+	public void startProgram() {
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
-		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQueryAnalizer [MRDigital] - Ajustar eventos do faturamento");
+		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Ajustar eventos do faturamento");
 		_FRAME.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		_FRAME.setPreferredSize(new Dimension(550, 400));
 		_FRAME.setMaximumSize(new Dimension(550, 400));
@@ -89,9 +89,9 @@ public class MR_AjustarEventosFatura {
 		});
 		
 		_LOG = new JTextArea();
-		_LOG.setFont(new Font("Courier New", Font.ROMAN_BASELINE, 14));
-		_LOG.append("Este programa está implementado para reconhecer as seguintes estruturas dos XMLs:\n");
-		_LOG.append("\t- Arquivos de remessa RPS para a [Prefeitura de Brasília/DF].\n");
+		_LOG.setFont(_FONT);
+		_LOG.append("[#] Este script vai reorganizar o campo de EVENTOS do faturamento\n[>] São suportados as seguintes estrutura XML dos municipios:\n");
+		_LOG.append("         »  Prefeitura de Brasília/DF.\n");
 		JScrollPane b1 = new JScrollPane(_LOG);
 		b1.setBounds(10, 10, 525, 310);
 		b1.setBorder(new LineBorder(Color.GRAY, 1, true));
@@ -125,6 +125,7 @@ public class MR_AjustarEventosFatura {
 					boolean pass = true;
 					_backup = null;
 					_source = JOptionPane.showInputDialog(null, "Informe o nome da tabela a analisar, por exemplo 'fat01e'", "Informe o nome da tabela", JOptionPane.QUESTION_MESSAGE);
+					_LOG.append("---\n");
 					Exception e = null;
 					int option = JOptionPane.showConfirmDialog(null, "Deseja efetuar um backup da tabela indicada antes de realizar o procedimento?", "JQueryAnalizer - Confirmaçao", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 					if (option == JOptionPane.YES_OPTION) {
@@ -192,7 +193,7 @@ public class MR_AjustarEventosFatura {
 					idfat = rs.getString(3);
 					recno = rs.getInt(4);
 					
-					_LOG.append("\tAnalisando registro: " + idfat + " / " + recno + "\n");
+					_LOG.append("» Analisando registro: " + idfat + " / " + recno + "\n");
 					_LOG.setCaretPosition(_LOG.getText().length());
 					
 					builder = new SAXBuilder();	
@@ -202,18 +203,17 @@ public class MR_AjustarEventosFatura {
 					root    = doc.getRootElement();
 					
 					if (!_SUPPORT_NAMESPACES.contains(root.getNamespaceURI())) {
-						_LOG.append("\tEstrutura do XML não suportada! (Namespace URI: " + root.getNamespaceURI() + ")\n");
+						_LOG.append("         » Estrutura do XML não suportada! (Namespace URI: " + root.getNamespaceURI() + ")\n");
 						_LOG.setCaretPosition(_LOG.getText().length());
 						continue;
 					}
 					else {
-						_LOG.append("\t » XML namespace: '" + root.getNamespaceURI() + "'\n");
+						_LOG.append("         » XML namespace: '" + root.getNamespaceURI() + "'\n");
 						_LOG.setCaretPosition(_LOG.getText().length());
 					}
 					
 					list    = root.getChildren();
 					for (Element element : list) {
-						//System.out.println("-> " + element);
 						if (element.getName().equalsIgnoreCase("IDLOTE")) {
 							IDLote = element.clone();
 						}
@@ -221,7 +221,6 @@ public class MR_AjustarEventosFatura {
 							NFe = element.clone();
 							ElementFilter filter = new ElementFilter("cNF");
 							for (Element c : NFe.getDescendants(filter)){
-								//System.out.println(c.getTextNormalize());
 								if (c.getTextNormalize().contains(idfat)) {
 									found = true;
 									break;
@@ -238,34 +237,31 @@ public class MR_AjustarEventosFatura {
 							root.addContent(IDLote);
 						}
 						root.addContent(NFe);
-						//xout.setFormat(Format.getPrettyFormat());
-						//xout.setFormat(Format.getCompactFormat());
 						StringWriter sw = new StringWriter();
 						xout.output(doc, sw);
 						StringBuffer sb = sw.getBuffer();
-						//System.out.println(sb.toString());
 						IDLote = NFe = null;
-						_LOG.append("\t » Realizando ajuste... (RPS " + idfat + ", XML ajustado em " + (sb.length() / 1024) + "kb)\n");
+						_LOG.append("                  » Realizando ajuste... (RPS " + idfat + ", XML ajustado em " + (sb.length() / 1024) + "kb)\n");
 						_LOG.setCaretPosition(_LOG.getText().length());
 						st = con.prepareStatement(("UPDATE [source] SET enviado=? WHERE recno=?").replace("[source]", _source));
 						st.setString(1, sb.toString());
 						st.setInt(2, recno);
 						SQL += st.toString().substring(st.toString().indexOf( ": ") + 2) + ";\r\n";
 						if (!st.execute() && st.getUpdateCount() >= 1) {
-							_LOG.append("\t » Ajuste realizado com sucesso!\n");
+							_LOG.append("                  » Ajuste realizado com sucesso!\n");
 						}
 						else {
-							_LOG.append("\t » Ocorreu algum erro ao realizar o ajuste!\n");
+							_LOG.append("                  » Ocorreu algum erro ao realizar o ajuste!\n");
 						}
 						_LOG.setCaretPosition(_LOG.getText().length());
 						
 					}
 					else {
-						_LOG.append("\t » Não foi localizado conteudo para ajuste neste registro.\n");
+						_LOG.append("                  » Não foi localizado conteudo para ajuste neste registro.\n");
 					}
 
 				}
-				_LOG.append("» Concluído!");
+				_LOG.append("» Concluído!\n");
 			}
 			catch (Exception e) {
 				e.printStackTrace();

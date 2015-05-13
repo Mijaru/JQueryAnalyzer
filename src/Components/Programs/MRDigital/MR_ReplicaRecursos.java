@@ -1,4 +1,4 @@
-package Components.Programs;
+package Components.Programs.MRDigital;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -51,6 +51,7 @@ public class MR_ReplicaRecursos {
 	private JTable _LIST;
 	private JLabel _active;
 	
+	
 	public MR_ReplicaRecursos(SQLConnectionManager con) {
 		_CONNECTION = con;
 		_font_title = new Font("Verdana", Font.ROMAN_BASELINE, 11);
@@ -74,7 +75,6 @@ public class MR_ReplicaRecursos {
 		text_1.setBounds(10, 10, 200, 15);
 		_DIALOG.add(text_1);
 		
-		
 		// -- submenu definicao da area e botoes... incluindo stilos.
 		JPanel area_1 = new JPanel();		
 		area_1.setOpaque(true);
@@ -89,25 +89,20 @@ public class MR_ReplicaRecursos {
 		gbc.insets = new Insets(3,3,3,3);
 		gbc.gridy = 0;
 		
-		ImageIcon ico_reload = new ImageIcon(ClassLoader.getSystemResource("prg_reload.png"));
+		ImageIcon ico_reload = new ImageIcon(ClassLoader.getSystemResource("refresh.png"));
 		ico_reload.setImage(ico_reload.getImage().getScaledInstance(20, 20, 100));
 		JLabel reload = new JLabel(ico_reload);
 		reload.setToolTipText("Atualiza a lista de usuários");
 		reload.addMouseListener(new MouseListener(){
-			@Override
 			public void mouseClicked(MouseEvent me) {
 				_active.setText("<html>Obtendo dados para atualizar a lista, <i>aguarde</i>...</html>");
 				Browser b = new Browser();
 				Thread t = new Thread(b);
 				t.start();
 			}
-			@Override
 			public void mouseEntered(MouseEvent a) { }
-			@Override
 			public void mouseExited(MouseEvent a) { }
-			@Override
 			public void mousePressed(MouseEvent a) { }
-			@Override
 			public void mouseReleased(MouseEvent a) { }			
 		});
 		gbc.gridx = 0;
@@ -116,7 +111,7 @@ public class MR_ReplicaRecursos {
 		gbc.gridx = 1;
 		area_1.add(new JBracket(1,20), gbc);
 		
-		ImageIcon ico_select = new ImageIcon(ClassLoader.getSystemResource("prg_check.png"));
+		ImageIcon ico_select = new ImageIcon(ClassLoader.getSystemResource("check_black.png"));
 		ico_select.setImage(ico_select.getImage().getScaledInstance(20, 20, 100));
 		JLabel select = new JLabel(ico_select);
 		select.setToolTipText("Seleciona o usuário de referência para a replicação dos recursos!");
@@ -145,31 +140,11 @@ public class MR_ReplicaRecursos {
 		});
 		gbc.gridx = 2;
 		area_1.add(select, gbc);
-		
-		ImageIcon ico_uncheck = new ImageIcon(ClassLoader.getSystemResource("prg_star.png"));
-		ico_uncheck.setImage(ico_uncheck.getImage().getScaledInstance(20, 20, 100));
-		JLabel uncheck = new JLabel(ico_uncheck);
-		uncheck.setToolTipText("Desmarca todos os usuários da lista");
-		uncheck.addMouseListener(new MouseListener(){
-			@Override public void mouseClicked(MouseEvent arg0) {
-				JTableModel model = (JTableModel)_LIST.getModel();
-				for (int row = 0; row < model.getRowCount(); row++) {
-					model.setState(row, 0);	
-				}
-				_LIST.repaint();				
-			}
-			@Override public void mouseEntered(MouseEvent arg0) { }
-			@Override public void mouseExited(MouseEvent arg0) { }
-			@Override public void mousePressed(MouseEvent arg0) { }
-			@Override public void mouseReleased(MouseEvent arg0) { }
-		});
+				
 		gbc.gridx = 3;
-		area_1.add(uncheck, gbc);
-		
-		gbc.gridx = 4;
 		area_1.add(new JBracket(1,20), gbc);
 		
-		ImageIcon ico_clipboard = new ImageIcon(ClassLoader.getSystemResource("prg_clipboard.png"));
+		ImageIcon ico_clipboard = new ImageIcon(ClassLoader.getSystemResource("clipboard.png"));
 		ico_clipboard.setImage(ico_clipboard.getImage().getScaledInstance(20, 20, 100));
 		JLabel clipboard = new JLabel(ico_clipboard);
 		clipboard.setToolTipText("Copia a lista atual de usuarios para a area de trabalho");
@@ -203,11 +178,11 @@ public class MR_ReplicaRecursos {
 			@Override public void mousePressed(MouseEvent arg0) { }
 			@Override public void mouseReleased(MouseEvent arg0) { }
 		});
-		gbc.gridx = 5;
+		gbc.gridx = 4;
 		area_1.add(clipboard, gbc);
 		
 		
-		Dimension dim_space = new Dimension(350, 24);
+		Dimension dim_space = new Dimension(375, 24);
 		_active = new JLabel("<html>Obtendo dados para preencher a lista, <i>aguarde</i>...</html>");
 		_active.setSize(dim_space);
 		_active.setPreferredSize(dim_space);
@@ -215,26 +190,27 @@ public class MR_ReplicaRecursos {
 		_active.setMinimumSize(dim_space);
 		_active.setHorizontalTextPosition(JLabel.RIGHT);
 		_active.setHorizontalAlignment(JLabel.RIGHT);
-		gbc.gridx = 6;
+		gbc.gridx = 5;
 		area_1.add(_active, gbc);
 		
 			
-		final ImageIcon ico_state_0 = new ImageIcon(ClassLoader.getSystemResource("unchecked.png"));
-		ico_state_0.setImage(ico_state_0.getImage().getScaledInstance(24, 24, 100));
-		final ImageIcon ico_state_1 = new ImageIcon(ClassLoader.getSystemResource("checked.png"));
-		ico_state_1.setImage(ico_state_1.getImage().getScaledInstance(24, 24, 100));
-		final ImageIcon ico_state_2 = new ImageIcon(ClassLoader.getSystemResource("selected.png"));
-		ico_state_2.setImage(ico_state_2.getImage().getScaledInstance(24, 24, 100));
+		final ImageIcon ico_state_0 = new ImageIcon(ClassLoader.getSystemResource("check_gray.png"));
+		ico_state_0.setImage(ico_state_0.getImage().getScaledInstance(22, 22, 100));
+		final ImageIcon ico_state_1 = new ImageIcon(ClassLoader.getSystemResource("check_green.png")); // !!!!
+		ico_state_1.setImage(ico_state_1.getImage().getScaledInstance(22, 22, 100));
+		final ImageIcon ico_state_2 = new ImageIcon(ClassLoader.getSystemResource("check_blue.png"));
+		ico_state_2.setImage(ico_state_2.getImage().getScaledInstance(22, 22, 100));
 		
 		
 		_LIST = new JTable();
 		_LIST.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		_LIST.setAutoscrolls(true);
 		_LIST.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 10));
-		_LIST.setGridColor(Color.WHITE);
-		_LIST.setShowGrid(true);
+		_LIST.setGridColor(Color.LIGHT_GRAY);
+		_LIST.setIntercellSpacing(new Dimension(0, 1));
 		_LIST.setSelectionForeground(Color.WHITE);
 		_LIST.setSelectionBackground(Color.DARK_GRAY);
+		_LIST.setRowHeight(26);
 		_LIST.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
 
 			private static final long serialVersionUID = 3407711122579968156L;
@@ -271,21 +247,24 @@ public class MR_ReplicaRecursos {
 					for (int j = 0; j < table.getSelectedRows().length; j++) {
 						if (row == table.getSelectedRows()[j]) {
 							root.setForeground(_LIST.getSelectionForeground());
-							root.setBackground(_LIST.getSelectionBackground());							
+							root.setBackground(Color.WHITE);							
 							pass = false;
 						}
 					}
 					if (!pass) { continue; }
-					if ((row % 2) == 0) { root.setBackground(new Color(220,220,220)); }
+					if ((row % 2) == 0) { root.setBackground(new Color(230,230,230)); }
 					else { root.setBackground(new Color(240,240,240)); }
 				}
 
 				switch (model != null ? model.getState(row) : 3) {
+					case 0:
+						root.setForeground(new Color(160,160,160));
+						break;
 					case 1:
-						root.setForeground(new Color(0,160,0));
+						root.setForeground(new Color(0,120,0));
 						break;
 					case 2:
-						root.setForeground(new Color(160,0,0));
+						root.setForeground(new Color(0,0,180));
 						break;
 				}			
 
@@ -608,7 +587,7 @@ public class MR_ReplicaRecursos {
 		JTableModel model = new JTableModel(cols, data);
 		FontMetrics font_metrics = _LIST.getFontMetrics(_LIST.getFont());
 		_LIST.setModel(model);
-		_LIST.setRowHeight(font_metrics.getHeight() + 6);
+		//_LIST.setRowHeight(font_metrics.getHeight() + 6);
 		int[] column_width = new int[model.getColumnCount()];
 		for (int i = 0; i < model.getRowCount(); i++) {
 			for (int j = 0; j < model.getColumnCount(); j++) {
@@ -640,7 +619,7 @@ public class MR_ReplicaRecursos {
 		}
 	}
 	
-	public void show() {
+	public void startProgram() {
 		if (_DIALOG != null) {
 			if (_CONNECTION == null || (_CONNECTION != null && (!_CONNECTION.isConnected() || !_CONNECTION.isDatabaseSelected()))) {
 				JOptionPane.showMessageDialog(MainWindow.getMainFrame(), "Você deve selecionar uma database do publi antes de executar este programa!", "JQueryAnalizer - Aviso!", JOptionPane.OK_OPTION);

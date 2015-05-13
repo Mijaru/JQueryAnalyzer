@@ -1,4 +1,4 @@
-package Components.Programs;
+package Components.Programs.MRDigital;
 
 
 import java.awt.Color;
@@ -51,54 +51,19 @@ public class MR_PrefixFinder {
 		_FRAME.setResizable(false);
 		_FRAME.getContentPane().setLayout(null);
 		_FRAME.addWindowListener(new WindowListener(){
-
-			@Override
-			public void windowActivated(WindowEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void windowClosed(WindowEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
+			public void windowActivated(WindowEvent arg0) { }
+			public void windowClosed(WindowEvent arg0) { }
 			public void windowClosing(WindowEvent arg0) {
-				System.out.println("Encerrando a normalização por requisição do usuário");
-				
 				_FRAME.dispose();
 			}
-
-			@Override
-			public void windowDeactivated(WindowEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void windowDeiconified(WindowEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void windowIconified(WindowEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void windowOpened(WindowEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-			
+			public void windowDeactivated(WindowEvent arg0) { }
+			public void windowDeiconified(WindowEvent arg0) { }
+			public void windowIconified(WindowEvent arg0) { }
+			public void windowOpened(WindowEvent arg0) { }
 		});
 		
 		_LOG = new JTextArea();
-		_LOG.setFont(new Font("Courier New", Font.ROMAN_BASELINE, 14));
+		_LOG.setFont(_FONT);
 		JScrollPane b1 = new JScrollPane(_LOG);
 		b1.setBounds(10, 10, 525, 310);
 		b1.setBorder(new LineBorder(Color.GRAY, 1, true));
@@ -127,17 +92,14 @@ public class MR_PrefixFinder {
 		executar.setBounds(10, 325, 150, 35);
 		executar.setFont(_FONT);
 		_FRAME.add(executar);
-		
 		executar.addActionListener(new ActionListener() {
-
-			@Override
 			public void actionPerformed(ActionEvent b) {
 				try {
 					FastList<String> list = new FastList<String>();
-					_LOG.append("» Localizando tabelas de CLIENTES e de PIT's, seja paciente!!!\n");
+					_LOG.append("[#] Localizando tabelas de CLIENTES e de PIT's, seja paciente!!!\n");
 					for (String table : _CONNECTION.getTables()) {
 						if (table != null && (table.toLowerCase().contains("pit") || table.toLowerCase().contains("cli")) && (table.endsWith("1") || table.endsWith("1") || table.endsWith("2") || table.endsWith("3") || table.endsWith("4") || table.endsWith("5") || table.endsWith("6") || table.endsWith("7") || table.endsWith("8") || table.endsWith("9") || table.endsWith("0"))) {
-							_LOG.append("*** " + table + "\n");
+							_LOG.append("         » " + table + "\n");
 							list.add(table);
 						}
 					}
@@ -183,14 +145,14 @@ public class MR_PrefixFinder {
 						prefixos_possiveis.add(charset.charAt(i) + "" + charset.charAt(j));
 					}
 				}
-				_LOG.append("» O mapa de caracteres utilizado no processo foi: '" + charset + "'.\n");
-				_LOG.append("» Já foram utilizados: " + prefixos_usados.size() + " códigos de prefixos distintos de um total de: " + prefixos_possiveis.size() + " combinações possiveis.\n");
-				_LOG.append("» Segue abaixo a lista dos códigos de prefixos JÁ UTILIZADOS:\n");
+				_LOG.append("[>] O mapa de caracteres utilizado no processo foi: '" + charset + "'.\n");
+				_LOG.append("[>] Já foram utilizados: " + prefixos_usados.size() + " códigos de prefixos distintos de um total de: " + prefixos_possiveis.size() + " combinações possiveis.\n");
+				_LOG.append("[>] Segue abaixo a lista dos códigos de prefixos JÁ UTILIZADOS:\n");
 				for (int i = 0; prefixos_usados.size() > i; i++) {
-					if (i > 0 && i % 20 == 0) {
+					if (i > 0 && i % 5 == 0) {
 						_LOG.append("\n");
 					}
-					_LOG.append("[" + prefixos_usados.get(i) + "]\t");
+					_LOG.append("\t" + prefixos_usados.get(i));
 				}
 				_LOG.append("\n");
 				FastList<String> prefixos_disponiveis = new FastList<String>();
@@ -207,16 +169,16 @@ public class MR_PrefixFinder {
 						prefixos_disponiveis.add(prefixos_possiveis.get(i));
 					}
 				}
-				_LOG.append("» Ainda existem: " + prefixos_disponiveis.size() + " códigos de prefixos disponiveis para utilização.\n");
-				_LOG.append("» Segue abaixo a lista dos códigos de prefixos DISPONÍVEIS:\n");
+				_LOG.append("[>] Ainda existem: " + prefixos_disponiveis.size() + " códigos de prefixos disponiveis para utilização.\n");
+				_LOG.append("[>] Segue abaixo a lista dos códigos de prefixos DISPONÍVEIS:\n");
 				for (int i = 0; prefixos_disponiveis.size() > i; i++) {
-					if (i > 0 && i % 20 == 0) {
+					if (i > 0 && i % 5 == 0) {
 						_LOG.append("\n");
 					}
-					_LOG.append("[" + prefixos_disponiveis.get(i) + "]\t");
+					_LOG.append("\t" + prefixos_disponiveis.get(i));
 				}
 				_LOG.append("\n");
-				_LOG.append("» Concluído!");
+				_LOG.append("[#] Concluído!");
 			}
 			catch (Exception e) {
 				e.printStackTrace();

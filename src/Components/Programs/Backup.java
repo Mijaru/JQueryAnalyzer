@@ -119,367 +119,373 @@ public class Backup {
 		uncheck_16 = new ImageIcon(ClassLoader.getSystemResource("unchecked.png"));
 		uncheck_16.setImage(uncheck_16.getImage().getScaledInstance(16, 16, 100));
 		
-			_dialog = new JFrame();
-			_dialog.setTitle("JQuery Analizer - Assistente de Backup");
-			Dimension size = new Dimension(500, 560);
-			_dialog.setMaximumSize(size);
-			_dialog.setMinimumSize(size);
-			_dialog.setPreferredSize(size);
-			_dialog.setLocationRelativeTo(null);
-			_dialog.setResizable(false);
-			_dialog.setLayout(null);
-			_dialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-			_dialog.setIconImage(new ImageIcon(ClassLoader.getSystemResource("data_backup.png")).getImage());
-
-			JLabel text1 = new JLabel("<html>Arquivo de <i>destino</i> do Backup:</html>");
-			text1.setFont(_default_font);
-			text1.setForeground(Color.DARK_GRAY);
-			text1.setBounds(10,5,475,20);
-			text1.setOpaque(true);
-			_dialog.add(text1);
+		_dialog = new JFrame();
+		_dialog.setTitle("JQuery Analizer - Assistente de Backup");
+		Dimension size = new Dimension(500, 560);
+		_dialog.setMaximumSize(size);
+		_dialog.setMinimumSize(size);
+		_dialog.setPreferredSize(size);
+		_dialog.setLocationRelativeTo(null);
+		_dialog.setResizable(false);
+		_dialog.setLayout(null);
+		_dialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		_dialog.setIconImage(new ImageIcon(ClassLoader.getSystemResource("data_backup.png")).getImage());
+		
+		JLabel text1 = new JLabel("<html>Arquivo de <i>destino</i> do Backup:</html>");
+		text1.setFont(_default_font);
+		text1.setForeground(Color.DARK_GRAY);
+		text1.setBounds(10,5,475,20);
+		text1.setOpaque(true);
+		_dialog.add(text1);
 			
-			_file = new JTextEditor(null, new Dimension(475,24));
-			_file.setBounds(10,25,475,24);
-			_file.setText(MainWindow.getPropertie("restore_file", "C:\\"));
-			_file.addKeyListener(new KeyListener() {
-				public void keyPressed(KeyEvent arg0) { }
-				public void keyTyped(KeyEvent arg0) { }
-				public void keyReleased(KeyEvent arg0) {
-					MainWindow.setPropertie("restore_file", _file.getText());
-					MainWindow.saveProperties();
+		_file = new JTextEditor(null, new Dimension(475,24));
+		_file.setBounds(10,25,475,24);
+		_file.setText(MainWindow.getPropertie("restore_file", "C:\\"));
+		_file.addKeyListener(new KeyListener() {
+			public void keyPressed(KeyEvent arg0) { }
+			public void keyTyped(KeyEvent arg0) { }
+			public void keyReleased(KeyEvent arg0) {
+				MainWindow.setPropertie("restore_file", _file.getText());
+				MainWindow.saveProperties();
+			}
+		});
+		_file.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent arg0) {
+				MainWindow.setPropertie("restore_file", _file.getText());
+				MainWindow.saveProperties();
+			}
+		});
+		_file.setSupportedFileExtensions(new String[]{".SQL", ".001"}, "Backups SQL");
+		_file.setApproveButtonLabel("Abrir");
+		_dialog.add(_file);
+		
+		// database de origem <-
+		JLabel text2 = new JLabel("<html>Selecione a <i>database</i>:</html>");
+		text2.setFont(_default_font);
+		text2.setForeground(Color.DARK_GRAY);
+		text2.setBounds(10,55,475,20);
+		_dialog.add(text2);
+		
+		_database = new JTree(new DefaultMutableTreeNode("Carregando lista de databases, aguarde!"));
+		_database.setFont(_default_font);
+		_database.setOpaque(true);
+		_database.setBorder(null);
+		_database.setCellRenderer(new DatabaseTreeCellRender(null, null));
+		_database.setRowHeight(18);
+		JScrollPane scrolls_1 = new JScrollPane(_database);
+		scrolls_1.setBounds(10,75,215,274);
+		scrolls_1.setAutoscrolls(true);
+		_dialog.add(scrolls_1);
+		_database.addKeyListener(new KeyListener(){
+			public void keyPressed(KeyEvent event) {
+				if (event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') {
+					Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
+					t.start(); 
 				}
-			});
-			_file.addActionListener(new ActionListener(){
-				public void actionPerformed(ActionEvent arg0) {
-					MainWindow.setPropertie("restore_file", _file.getText());
-					MainWindow.saveProperties();
-				}
-			});
-			_file.setSupportedFileExtensions(new String[]{".SQL", ".001"}, "Backups SQL");
-			_file.setApproveButtonLabel("Abrir");
-			_dialog.add(_file);
-			
-			// database de origem <-
-			JLabel text2 = new JLabel("<html>Selecione a <i>database</i>:</html>");
-			text2.setFont(_default_font);
-			text2.setForeground(Color.DARK_GRAY);
-			text2.setBounds(10,55,475,20);
-			_dialog.add(text2);
-			
-			_database = new JTree(new DefaultMutableTreeNode("Carregando lista de databases, aguarde!"));
-			_database.setFont(_default_font);
-			_database.setOpaque(true);
-			_database.setBorder(null);
-			_database.setCellRenderer(new DatabaseTreeCellRender(null, null));
-			_database.setRowHeight(18);
-			JScrollPane scrolls_1 = new JScrollPane(_database);
-			scrolls_1.setBounds(10,75,215,274);
-			scrolls_1.setAutoscrolls(true);
-			_dialog.add(scrolls_1);
-			_database.addKeyListener(new KeyListener(){
-				public void keyPressed(KeyEvent event) {
-					if (event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') {
-						Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
-						t.start(); 
-					}
-				}
-				public void keyReleased(KeyEvent event) { }
-				public void keyTyped(KeyEvent event) { }
-			});
-			_database.addMouseListener(new MouseListener(){
-				public void mouseClicked(MouseEvent event) {
-					if (event.getButton() > 1) {
-						JPopupMenu menu = new JPopupMenu();
-						JMenuItem item1 = new JMenuItem("Selecionar este banco");
-						item1.addActionListener(new ActionListener() {
-							public void actionPerformed(ActionEvent event) {
-								Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
-								t.start();
-							}
-						});
-						menu.add(item1);
-						JMenuItem item2 = new JMenuItem("Atualizar lista");
-						item2.addActionListener(new ActionListener() {
-							public void actionPerformed(ActionEvent event) { 
-								Thread t = new Thread(new DatabaseList());
-								t.start();
-							}
-						});
-						menu.add(item2);
-						menu.show(_database, event.getX(), event.getY());
-					}
-				}
-				public void mouseEntered(MouseEvent event) { }
-				public void mouseExited(MouseEvent event) { }
-				public void mousePressed(MouseEvent event) { 
-					if (event.getClickCount() >= 2) {
-						Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
-						try {
-							Thread.sleep(10);
+			}
+			public void keyReleased(KeyEvent event) { }
+			public void keyTyped(KeyEvent event) { }
+		});
+		_database.addMouseListener(new MouseListener(){
+			public void mouseClicked(MouseEvent event) {
+				if (event.getButton() > 1) {
+					JPopupMenu menu = new JPopupMenu();
+					JMenuItem item1 = new JMenuItem("Selecionar este banco");
+					item1.addActionListener(new ActionListener() {
+						public void actionPerformed(ActionEvent event) {
+							Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
+							t.start();
 						}
-						catch (InterruptedException e) {
-							e.printStackTrace();
+					});
+					menu.add(item1);
+					JMenuItem item2 = new JMenuItem("Atualizar lista");
+					item2.addActionListener(new ActionListener() {
+						public void actionPerformed(ActionEvent event) { 
+							Thread t = new Thread(new DatabaseList());
+							t.start();
 						}
-						t.start();
-					} 
+					});
+					menu.add(item2);
+					menu.show(_database, event.getX(), event.getY());
 				}
-				public void mouseReleased(MouseEvent event) { }				
-			});
-			// tabelas da database a serem salvas <-
-			JLabel text3 = new JLabel("<html>Selecione as <i>tabelas</i>:</html>");
-			text3.setFont(_default_font);
-			text3.setForeground(Color.DARK_GRAY);
-			text3.setBounds(230,55,475,20);
-			_dialog.add(text3);
-			
-			_list = new JTree(new DefaultMutableTreeNode("Aguarde!"));
-			_list.getRootPane();
-			_list.setCellRenderer(new TableTreeCellRender());
-			_list.setOpaque(true);
-			_list.addKeyListener(new KeyListener() {
-				public void keyPressed(KeyEvent event) {
-					if ((event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') && event.getComponent() != null && event.getComponent() instanceof JTree) { selectTable(); }
-				}
-				public void keyReleased(KeyEvent a) { }
-				public void keyTyped(KeyEvent a) { }
-			});
-			_list.addMouseListener(new MouseListener() {
-				public void mouseClicked(MouseEvent event) { }
-				public void mouseEntered(MouseEvent event) { }
-				public void mouseExited(MouseEvent event) { }
-				public void mousePressed(MouseEvent event) { 
-					if (event.getClickCount() >= 2) { selectTable(); } 
-				}
-				public void mouseReleased(MouseEvent event) { }
-			});
-			JScrollPane scrolls = new JScrollPane(_list);
-			scrolls.setBounds(230,75,255,274);
-			scrolls.setAutoscrolls(true);
-			_dialog.add(scrolls);
-			
-			
-			_run = new JButton("<html><u>E</u>xecutar Backup</html>");
-			_run.setFont(_default_font);
-			_run.addActionListener(new ActionListener(){
-				public void actionPerformed(ActionEvent e) {
-					int option = JOptionPane.NO_OPTION;
-					if (_options != null && _options.getSelectedIndex() != 0) {
-						option = JOptionPane.showConfirmDialog(null, "Você selecionou a opçao de '"+_options.getSelectedItem()+"', com esta opção de backup selecionada o backup realizado não será completo. Deseja prosseguir?" , "Confirmação", JOptionPane.YES_OPTION);
-						if (option == JOptionPane.NO_OPTION) { return; }									
+			}
+			public void mouseEntered(MouseEvent event) { }
+			public void mouseExited(MouseEvent event) { }
+			public void mousePressed(MouseEvent event) { 
+				if (event.getClickCount() >= 2) {
+					Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
+					try {
+						Thread.sleep(10);
 					}
-					toogleActions(false);
-					TreeModel model = _list.getModel();
-					_table_list = new ArrayList<String>();
-					String table = null;
-					String text = null;
-					boolean tag = false;
-					for (int i = 0; i < model.getChildCount(model.getRoot()); i++) {
-						if (model.getChild(model.getRoot(), i) instanceof DefaultMutableTreeNode) {
-							DefaultMutableTreeNode node = (DefaultMutableTreeNode)model.getChild(model.getRoot(), i);
-							for (int j = 0; j < node.getChildCount(); j++) {
-								if (node.getChildAt(j) instanceof JCheckTreeNode) {
-									JCheckTreeNode row = (JCheckTreeNode)node.getChildAt(j);
-									table = row.toString();
-									text = "";
-									for (int k = 0; k < table.length(); k++) {
-										if (table.charAt(k) == '<') { tag = true; }
-										else if (table.charAt(k) == '>') { tag = false; continue; }
-										if (!tag) { text += table.charAt(k); }
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					t.start();
+				} 
+			}
+			public void mouseReleased(MouseEvent event) { }				
+		});
+		// tabelas da database a serem salvas <-
+		JLabel text3 = new JLabel("<html>Selecione as <i>tabelas</i>:</html>");
+		text3.setFont(_default_font);
+		text3.setForeground(Color.DARK_GRAY);
+		text3.setBounds(230,55,475,20);
+		_dialog.add(text3);
+		
+		_list = new JTree(new DefaultMutableTreeNode("Aguarde!"));
+		_list.getRootPane();
+		_list.setCellRenderer(new TableTreeCellRender());
+		_list.setOpaque(true);
+		_list.addKeyListener(new KeyListener() {
+			public void keyPressed(KeyEvent event) {
+				if ((event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') && event.getComponent() != null && event.getComponent() instanceof JTree) { selectTable(); }
+			}
+			public void keyReleased(KeyEvent a) { }
+			public void keyTyped(KeyEvent a) { }
+		});
+		_list.addMouseListener(new MouseListener() {
+			public void mouseClicked(MouseEvent event) { }
+			public void mouseEntered(MouseEvent event) { }
+			public void mouseExited(MouseEvent event) { }
+			public void mousePressed(MouseEvent event) { 
+				if (event.getClickCount() >= 2) { selectTable(); } 
+			}
+			public void mouseReleased(MouseEvent event) { }
+		});
+		JScrollPane scrolls = new JScrollPane(_list);
+		scrolls.setBounds(230,75,255,274);
+		scrolls.setAutoscrolls(true);
+		_dialog.add(scrolls);
+			
+			
+		_run = new JButton("<html><u>E</u>xecutar Backup</html>");
+		_run.setFont(_default_font);
+		_run.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				int option = JOptionPane.NO_OPTION;
+				if (_options != null && _options.getSelectedIndex() != 0) {
+					option = JOptionPane.showConfirmDialog(null, "Você selecionou a opçao de '"+_options.getSelectedItem()+"', com esta opção de backup selecionada o backup realizado não será completo. Deseja prosseguir?" , "Confirmação", JOptionPane.YES_OPTION);
+					if (option == JOptionPane.NO_OPTION) {
+						return; 
+					}									
+				}
+				toogleActions(false);
+				TreeModel model = _list.getModel();
+				_table_list = new ArrayList<String>();
+				String table = null;
+				String text = null;
+				boolean tag = false;
+				for (int i = 0; i < model.getChildCount(model.getRoot()); i++) {
+					if (model.getChild(model.getRoot(), i) instanceof DefaultMutableTreeNode) {
+						DefaultMutableTreeNode node = (DefaultMutableTreeNode)model.getChild(model.getRoot(), i);
+						for (int j = 0; j < node.getChildCount(); j++) {
+							if (node.getChildAt(j) instanceof JCheckTreeNode) {
+								JCheckTreeNode row = (JCheckTreeNode)node.getChildAt(j);
+								table = row.toString();
+								text = "";
+								for (int k = 0; k < table.length(); k++) {
+									if (table.charAt(k) == '<') {
+										tag = true; 
 									}
-									if (row.isSelected()) { _table_list.add(text); }
+									else if (table.charAt(k) == '>') {
+										tag = false;
+										continue; 
+									}
+									if (!tag) {
+										text += table.charAt(k);
+									}
 								}
+								if (row.isSelected()) { _table_list.add(text); }
 							}
+						}
 							
-							_table_list_size = _table_list.size();
-							option = JOptionPane.showConfirmDialog(null, "Foram selecionadas: " + (_table_list.size()) + "/" + (node.getChildCount()) + " tabelas para realizar o backup, existem: " + (node.getChildCount() - _table_list.size()) + " tabelas desmarcadas.\nDeseja prosseguir com o backup?" , "Confirmação", JOptionPane.YES_OPTION);
-							if (option == JOptionPane.YES_OPTION) {
-								_errors_io = 0;
-								_errors_other = 0;
-								_output_file = new File(_file.getText());
-								if (_output_file.exists()) {
-									option = JOptionPane.showConfirmDialog(null, "O arquivo selecionado: '" + _output_file.getAbsolutePath().toUpperCase() + "' já existe.\n\nDeseja sobrescrever este arquivo!?" , "Confirmação", JOptionPane.YES_OPTION);
-									if (option == JOptionPane.YES_OPTION) {
-										_output_file.delete();
-									}
-									else {
-										toogleActions(true);
-										return;
-									}
-								}
-								try {
-									_output_stream = new FileOutputStream(_output_file);
-									_progress.setText("<html><i>Contabilizando</i> os registros do backup atual...</html>");
-									_registers_total = 0;
-									try {
-										EntryCount ec = new EntryCount(true);
-										_thread = new Thread(ec);
-										_thread.start();
-									}
-									catch (Exception e1) {
-										toogleActions(true);
-										e1.printStackTrace();
-									}
-								}
-								catch (FileNotFoundException e1) {
-									JOptionPane.showMessageDialog(null, "<html>Não foi possível criar o arquivo de backup: <b><font color='red'>" + e1.getMessage() + "</font></b></html>", "Erro!", JOptionPane.OK_OPTION);
-									toogleActions(true);
-									_errors_io += 1;
-									e1.printStackTrace(); 
-								}  
-							}
-							else {
-								toogleActions(true);
-							}
-							return;
-						}
-					}
-					if (_selected_database == null || (_selected_database != null && _selected_database.isEmpty())) {
-						toogleActions(true);
-						JOptionPane.showMessageDialog(null, "<html>Você deve <u>selecionar uma database</u> antes de executar um backup.</html>", "JQueryAnalizer - Aviso!", JOptionPane.OK_OPTION);
-						return;
-					}
-					if (_table_list == null || (_table_list != null && _table_list.size() == 0)) {
-						toogleActions(true);
-						JOptionPane.showMessageDialog(null, "<html>Não existem <u>tabelas marcadas</u> para backup!</html>", "JQueryAnalizer - Aviso!", JOptionPane.OK_OPTION);
-					}
-				}
-			});
-			_run.setMnemonic(KeyEvent.VK_E);
-			_run.setBounds(255,487,150,35);
-			_dialog.add(_run);
-			
-			_close = new JButton("<html><u>S</u>air</html>");
-			_close.setMnemonic(KeyEvent.VK_S);
-			_close.setFont(_default_font);
-			_close.setBounds(410,487,75,35);
-			_close.addActionListener(new ActionListener(){
-				public void actionPerformed(ActionEvent event) {
-					for (WindowListener listener : _dialog.getWindowListeners()) {
-						if (listener == null) { continue; }
-						listener.windowClosing(null);
-					}					
-				}
-			});
-			_dialog.add(_close);
-			
-			_text4 = new JLabel("<html><i>Progresso</i> do backup:</html>");
-			_text4.setFont(_default_font);
-			_text4.setForeground(Color.DARK_GRAY);
-			_text4.setBounds(10,354,475,20);
-			_text4.setOpaque(true);
-			_dialog.add(_text4);
-			
-			_progress = new JProgressLabel();
-			_progress.setPanelBounds(10,374,475,35);
-			_progress.setText("selecione a database");
-			_dialog.add(_progress);			
-			
-			JLabel opcoes = new JLabel();
-			opcoes.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Opções de backup", SwingConstants.CENTER, SwingConstants.CENTER, _default_font, Color.DARK_GRAY));
-			opcoes.setBounds(10,420,475,65);
-			_dialog.add(opcoes);
-			
-			
-			JLabel option_t1 = new JLabel("<html><b>a</b>. Tipo de backup.</html>");
-			option_t1.setBounds(10, 18, 225, 18);
-			option_t1.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
-			opcoes.add(option_t1);
-			
-			_options = new JComboBox<String>() {
-				private static final long serialVersionUID = -6516283705456571873L;
-				public void draw(Graphics g) {
-					Rectangle area = getBounds();
-					BufferedImage image = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_RGB);					
-					JLabel root = new JLabel(getSelectedItem().toString());
-					root.setBounds(area);
-					root.setBackground(getBackground());
-					root.setForeground(getForeground());
-					root.setHorizontalAlignment(JLabel.CENTER);
-					root.setOpaque(true);
-					root.setFont(getFont());
-					root.paintImmediately(area);
-					Graphics2D g1 = image.createGraphics();
-					g1.fillRect(0, 0, area.width, area.height);
-					root.paint(g1);
-					g1.dispose();
-					g.drawImage(image, 0, 0, null);
-				}
-				public void paintComponent(Graphics g) {
-					draw(g);
-				}
-			};
-			_options.setBounds(10,38,225,20);
-			_options.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
-			_options.addItem("Exportar estruturas e dados");
-			_options.addItem("Exportar estruturas");
-			_options.addItem("Exportar dados");
-			opcoes.add(_options);
-			
-			JLabel option_t2 = new JLabel("<html><b>b</b>. Banco de dados de destino.</html>");
-			option_t2.setBounds(240, 18, 225, 18);
-			option_t2.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
-			opcoes.add(option_t2);
-			
-			_options2 = new JComboBox<String>() {
-				private static final long serialVersionUID = -6516283705456571873L;
-				public void draw(Graphics g) {
-					Rectangle area = getBounds();
-					BufferedImage image = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_RGB);					
-					JLabel root = new JLabel(getSelectedItem().toString());
-					root.setBounds(area);
-					root.setBackground(getBackground());
-					root.setForeground(getForeground());
-					root.setHorizontalAlignment(JLabel.CENTER);
-					root.setOpaque(true);
-					root.setFont(getFont());
-					root.paintImmediately(area);
-					Graphics2D g1 = image.createGraphics();
-					g1.fillRect(0, 0, area.width, area.height);
-					root.paint(g1);
-					g1.dispose();
-					g.drawImage(image, 0, 0, null);
-				}
-				public void paintComponent(Graphics g) {
-					draw(g);
-				}
-			};
-			_options2.setBounds(240,38,225,20);
-			_options2.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
-			_options2.addItem("Oracle MySQL Server");
-			//_options2.addItem("Oracle Database Server");
-			//_options2.addItem("PostgreSQL Server");
-			_options2.addItem("Microsoft SQL Server");
-			opcoes.add(_options2);
-			
-			_options3 = new JCheckBox("Não paginar consultas");
-			_options3.setBounds(10,500,200,15);
-			_options3.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
-			_dialog.add(_options3);
-
-			_dialog.addWindowListener(new WindowListener(){
-				public void windowActivated(WindowEvent a) { }
-				public void windowClosed(WindowEvent a) { }
-				@SuppressWarnings("deprecation")
-				public void windowClosing(WindowEvent arg0) {
-					if (_thread != null && _thread.isAlive()) {
-						int option = JOptionPane.showConfirmDialog(_dialog, "Existe um backup em execução, tem certeza que deseja interromper o backup?", "Confirmação", JOptionPane.YES_OPTION);
+						_table_list_size = _table_list.size();
+						option = JOptionPane.showConfirmDialog(null, "Foram selecionadas: " + (_table_list.size()) + "/" + (node.getChildCount()) + " tabelas para realizar o backup, existem: " + (node.getChildCount() - _table_list.size()) + " tabelas desmarcadas.\nDeseja prosseguir com o backup?" , "Confirmação", JOptionPane.YES_OPTION);
 						if (option == JOptionPane.YES_OPTION) {
-							_thread.stop();
-							_thread = null;
+							_errors_io = 0;
+							_errors_other = 0;
+							_output_file = new File(_file.getText());
+							if (_output_file.exists()) {
+								option = JOptionPane.showConfirmDialog(null, "O arquivo selecionado: '" + _output_file.getAbsolutePath().toUpperCase() + "' já existe.\n\nDeseja sobrescrever este arquivo!?" , "Confirmação", JOptionPane.YES_OPTION);
+								if (option == JOptionPane.YES_OPTION) {
+									_output_file.delete();
+								}
+								else {
+									toogleActions(true);
+									return;
+								}
+							}
+							try {
+								_output_stream = new FileOutputStream(_output_file);
+								_progress.setText("<html><i>Contabilizando</i> os registros do backup atual...</html>");
+								_registers_total = 0;
+								try {
+									EntryCount ec = new EntryCount(true);
+									_thread = new Thread(ec);
+									_thread.start();
+								}
+								catch (Exception e1) {
+									toogleActions(true);
+									e1.printStackTrace();
+								}
+							}
+							catch (FileNotFoundException e1) {
+								JOptionPane.showMessageDialog(null, "<html>Não foi possível criar o arquivo de backup: <b><font color='red'>" + e1.getMessage() + "</font></b></html>", "Erro!", JOptionPane.OK_OPTION);
+								toogleActions(true);
+								_errors_io += 1;
+								e1.printStackTrace(); 
+							}  
 						}
 						else {
-							return;
+							toogleActions(true);
 						}
+						return;
 					}
-					disconnect();
-					_dialog.dispose();
-					_dialog = null;
 				}
-				public void windowDeactivated(WindowEvent a) { }
-				public void windowDeiconified(WindowEvent a) { }
-				public void windowIconified(WindowEvent a) { }
-				public void windowOpened(WindowEvent a) { }
-			});
+				if (_selected_database == null || (_selected_database != null && _selected_database.isEmpty())) {
+					toogleActions(true);
+					JOptionPane.showMessageDialog(null, "<html>Você deve <u>selecionar uma database</u> antes de executar um backup.</html>", "JQueryAnalizer - Aviso!", JOptionPane.OK_OPTION);
+					return;
+				}
+				if (_table_list == null || (_table_list != null && _table_list.size() == 0)) {
+					toogleActions(true);
+					JOptionPane.showMessageDialog(null, "<html>Não existem <u>tabelas marcadas</u> para backup!</html>", "JQueryAnalizer - Aviso!", JOptionPane.OK_OPTION);
+				}
+			}
+		});
+		_run.setMnemonic(KeyEvent.VK_E);
+		_run.setBounds(255,487,150,35);
+		_dialog.add(_run);
+		
+		_close = new JButton("<html><u>S</u>air</html>");
+		_close.setMnemonic(KeyEvent.VK_S);
+		_close.setFont(_default_font);
+		_close.setBounds(410,487,75,35);
+		_close.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent event) {
+				for (WindowListener listener : _dialog.getWindowListeners()) {
+					if (listener == null) { continue; }
+					listener.windowClosing(null);
+				}					
+			}
+		});
+		_dialog.add(_close);
+			
+		_text4 = new JLabel("<html><i>Progresso</i> do backup:</html>");
+		_text4.setFont(_default_font);
+		_text4.setForeground(Color.DARK_GRAY);
+		_text4.setBounds(10,354,475,20);
+		_text4.setOpaque(true);
+		_dialog.add(_text4);
+			
+		_progress = new JProgressLabel();
+		_progress.setPanelBounds(10,374,475,35);
+		_progress.setText("selecione a database");
+		_dialog.add(_progress);			
+			
+		JLabel opcoes = new JLabel();
+		opcoes.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Opções de backup", SwingConstants.CENTER, SwingConstants.CENTER, _default_font, Color.DARK_GRAY));
+		opcoes.setBounds(10,420,475,65);
+		_dialog.add(opcoes);
+			
+		JLabel option_t1 = new JLabel("<html><b>a</b>. Tipo de backup.</html>");
+		option_t1.setBounds(10, 18, 225, 18);
+		option_t1.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
+		opcoes.add(option_t1);
+			
+		_options = new JComboBox<String>() {
+			private static final long serialVersionUID = -6516283705456571873L;
+			public void draw(Graphics g) {
+				Rectangle area = getBounds();
+				BufferedImage image = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_RGB);					
+				JLabel root = new JLabel(getSelectedItem().toString());
+				root.setBounds(area);
+				root.setBackground(getBackground());
+				root.setForeground(getForeground());
+				root.setHorizontalAlignment(JLabel.CENTER);
+				root.setOpaque(true);
+				root.setFont(getFont());
+				root.paintImmediately(area);
+				Graphics2D g1 = image.createGraphics();
+				g1.fillRect(0, 0, area.width, area.height);
+				root.paint(g1);
+				g1.dispose();
+				g.drawImage(image, 0, 0, null);
+			}
+			public void paintComponent(Graphics g) {
+				draw(g);
+			}
+		};
+		_options.setBounds(10,38,225,20);
+		_options.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
+		_options.addItem("Exportar estruturas e dados");
+		_options.addItem("Exportar estruturas");
+		_options.addItem("Exportar dados");
+		opcoes.add(_options);
+			
+		JLabel option_t2 = new JLabel("<html><b>b</b>. Banco de dados de destino.</html>");
+		option_t2.setBounds(240, 18, 225, 18);
+		option_t2.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
+		opcoes.add(option_t2);
+			
+		_options2 = new JComboBox<String>() {
+			private static final long serialVersionUID = -6516283705456571873L;
+			public void draw(Graphics g) {
+				Rectangle area = getBounds();
+				BufferedImage image = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_RGB);					
+				JLabel root = new JLabel(getSelectedItem().toString());
+				root.setBounds(area);
+				root.setBackground(getBackground());
+				root.setForeground(getForeground());
+				root.setHorizontalAlignment(JLabel.CENTER);
+				root.setOpaque(true);
+				root.setFont(getFont());
+				root.paintImmediately(area);
+				Graphics2D g1 = image.createGraphics();
+				g1.fillRect(0, 0, area.width, area.height);
+				root.paint(g1);
+				g1.dispose();
+				g.drawImage(image, 0, 0, null);
+			}
+			public void paintComponent(Graphics g) {
+				draw(g);
+			}
+		};
+		_options2.setBounds(240,38,225,20);
+		_options2.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
+		_options2.addItem("Oracle MySQL Server");
+		_options2.addItem("Microsoft SQL Server");
+		opcoes.add(_options2);
+		
+		_options3 = new JCheckBox("Não paginar consultas");
+		_options3.setBounds(10,500,200,15);
+		_options3.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
+		_dialog.add(_options3);
+		
+		_dialog.addWindowListener(new WindowListener(){
+			public void windowActivated(WindowEvent a) { }
+			public void windowClosed(WindowEvent a) { }
+			@SuppressWarnings("deprecation")
+			public void windowClosing(WindowEvent arg0) {
+				if (_thread != null && _thread.isAlive()) {
+					int option = JOptionPane.showConfirmDialog(_dialog, "Existe um backup em execução, tem certeza que deseja interromper o backup?", "Confirmação", JOptionPane.YES_OPTION);
+					if (option == JOptionPane.YES_OPTION) {
+						_thread.stop();
+						_thread = null;
+					}
+					else {
+						return;
+					}
+				}
+				disconnect();
+				_dialog.dispose();
+				_dialog = null;
+			}
+			public void windowDeactivated(WindowEvent a) { }
+			public void windowDeiconified(WindowEvent a) { }
+			public void windowIconified(WindowEvent a) { }
+			public void windowOpened(WindowEvent a) { }
+		});
 	}
 	
 	public void start() {

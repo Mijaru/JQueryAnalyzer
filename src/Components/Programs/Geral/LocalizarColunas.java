@@ -1,4 +1,4 @@
-package Components.Programs;
+package Components.Programs.Geral;
 
 
 import java.awt.Color;
@@ -25,21 +25,21 @@ import Components.MainWindow;
 import Components.SQLConnectionManager;
 import Components.MainWindowComponents.JQDialog;
 
-public class MR_LocalizarColunas {
+public class LocalizarColunas {
 	private JQDialog _FRAME;
 	private Font _FONT = null;
 	private JTextArea _LOG;
 	private SQLConnectionManager _CONNECTION;
 	
 	/** -CONSTRUTOR- */
-	public MR_LocalizarColunas(SQLConnectionManager connection) {
+	public LocalizarColunas(SQLConnectionManager connection) {
 		_CONNECTION = connection;
 	}
 
 	public void startPrograma() {
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
-		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQueryAnalizer [MRDigital] - Localiza as tabelas com determinada coluna.");
+		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Localiza as tabelas com determinada coluna.");
 		_FRAME.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		_FRAME.setPreferredSize(new Dimension(550, 400));
 		_FRAME.setMaximumSize(new Dimension(550, 400));
@@ -50,7 +50,6 @@ public class MR_LocalizarColunas {
 		_FRAME.getContentPane().setLayout(null);
 		_FRAME.addWindowListener(new WindowListener(){
 			public void windowClosing(WindowEvent arg0) {
-				System.out.println("Encerrando a localização as tabelas com determinada coluna.");
 				_FRAME.dispose();
 			}
 			public void windowActivated(WindowEvent arg0) { }
@@ -64,6 +63,7 @@ public class MR_LocalizarColunas {
 		
 		_LOG = new JTextArea();
 		_LOG.setFont(new Font("Courier New", Font.ROMAN_BASELINE, 14));
+		_LOG.setText("INSTRUÇÕES:\n-----------\nClique em iniciar e informe o nome do campo que deseja\nlocalizar e aguarde a conclusão da busca e os resultados\nserão listados nesta tela.\n\nFunciona com MYSQL e MS SQL SERVER.\n\n");
 		JScrollPane b1 = new JScrollPane(_LOG);
 		b1.setBounds(10, 10, 525, 310);
 		b1.setBorder(new LineBorder(Color.GRAY, 1, true));

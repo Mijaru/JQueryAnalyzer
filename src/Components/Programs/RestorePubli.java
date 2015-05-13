@@ -186,7 +186,7 @@ public class RestorePubli {
 		opcoes.add(_option_in_cs);
 	}
 
-	public void start() {
+	public void startProgram() {
 		if (_DIALOG != null) {
 			JOptionPane.showMessageDialog(null, "<html>Esta modalidade de restauração de backups é indicada para os backups feitos a partir do publi" +
 												"<br>(para versões posteriores ao dia 16/03/2011)" +

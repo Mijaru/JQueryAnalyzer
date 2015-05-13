@@ -317,13 +317,6 @@ public class Restore {
 														}
 														text = "<html><i>" + Util.toPercent(progress) + "</i> concluido! Aguardando ação na tabela: { <font color='blue'><b>" + table + "</b></font> }</html>";
 														_progress.updateProgress(text, progress, 0f);
-														/*
-														if (_paint_time + (40000000) <= System.nanoTime() || progress == 100) {
-															_progress.setText("<html><i>" + toPercent(progress) + "</i> concluido! Aguardando ação na tabela: <font color='blue'><b>" + table + "</b></font></html>");
-															_progress.setMainProgress(progress);
-															_paint_time = System.nanoTime();
-														}
-														*/
 														exception = _CONNECTION.executeUpdate(data);
 													}
 													break;

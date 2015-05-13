@@ -28,14 +28,15 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 
 import javolution.util.FastList;
-
 import Components.MainWindow;
 import Components.SQLConnectionManager;
+import Components.Util;
 import Components.MainWindowComponents.JParametersPanel;
 import Components.MainWindowComponents.JProgressLabel;
 import Components.MainWindowComponents.JQueryPane;
@@ -81,7 +82,7 @@ public class ChangeTableOwner {
 			uncheck.setImage(uncheck.getImage().getScaledInstance(24, 24, 100));
 
 			_DIALOG = new JFrame();
-			_DIALOG.setTitle("JQueryAnalizer - Assistente para substituição de owner das tabelas. [SQL Server]");
+			_DIALOG.setTitle("JQuery Analizer - Assistente para substituição de owner das tabelas. [SQL Server]");
 			_DIALOG.setMaximumSize(new Dimension(500,505));
 			_DIALOG.setMinimumSize(new Dimension(500,505));
 			_DIALOG.setPreferredSize(new Dimension(500,505));
@@ -108,26 +109,21 @@ public class ChangeTableOwner {
 			scrolls_1.setAutoscrolls(true);
 			_DIALOG.add(scrolls_1);
 			_database.addKeyListener(new KeyListener(){
-				@Override
 				public void keyPressed(KeyEvent event) {
 					if (event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') {
 						Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
 						t.start(); 
 					}
 				}
-				@Override
 				public void keyReleased(KeyEvent event) { }
-				@Override
 				public void keyTyped(KeyEvent event) { }
 			});
 			_database.addMouseListener(new MouseListener(){
-				@Override
 				public void mouseClicked(MouseEvent event) {
 					if (event.getButton() > 1) {
 						JPopupMenu menu = new JPopupMenu();
 						JMenuItem item1 = new JMenuItem("Selecionar este banco");
 						item1.addActionListener(new ActionListener() {
-							@Override
 							public void actionPerformed(ActionEvent event) {
 								Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
 								t.start();
@@ -136,7 +132,6 @@ public class ChangeTableOwner {
 						menu.add(item1);
 						JMenuItem item2 = new JMenuItem("Atualizar lista");
 						item2.addActionListener(new ActionListener() {
-							@Override
 							public void actionPerformed(ActionEvent event) { 
 								Thread t = new Thread(new DatabaseList());
 								t.start();
@@ -146,18 +141,14 @@ public class ChangeTableOwner {
 						menu.show(_database, event.getX(), event.getY());
 					}
 				}
-				@Override
 				public void mouseEntered(MouseEvent event) { }
-				@Override
 				public void mouseExited(MouseEvent event) { }
-				@Override
 				public void mousePressed(MouseEvent event) { 
 					if (event.getClickCount() >= 2) {
 						Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
 						t.start();
 					} 
 				}
-				@Override
 				public void mouseReleased(MouseEvent event) { }				
 			});
 
@@ -172,27 +163,19 @@ public class ChangeTableOwner {
 			_list.setCellRenderer(new TableTreeCellRender());
 			_list.setOpaque(true);
 			_list.addKeyListener(new KeyListener() {
-				@Override
 				public void keyPressed(KeyEvent event) {
 					if ((event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') && event.getComponent() != null && event.getComponent() instanceof JTree) { selectTable(); }
 				}
-				@Override
 				public void keyReleased(KeyEvent a) { }
-				@Override
 				public void keyTyped(KeyEvent a) { }
 			});
 			_list.addMouseListener(new MouseListener() {
-				@Override
 				public void mouseClicked(MouseEvent event) { }
-				@Override
 				public void mouseEntered(MouseEvent event) { }
-				@Override
 				public void mouseExited(MouseEvent event) { }
-				@Override
 				public void mousePressed(MouseEvent event) { 
 					if (event.getClickCount() >= 2) { selectTable(); } 
 				}
-				@Override
 				public void mouseReleased(MouseEvent event) { }
 			});
 			JScrollPane scrolls = new JScrollPane(_list);
@@ -245,7 +228,7 @@ public class ChangeTableOwner {
 		
 			_progress = new JProgressLabel();
 			_progress.setPanelBounds(8,379,477,35);
-			_progress.setText("Selecione a database");
+			_progress.setText("<html>Selecione o <b>Banco de Dados</b></html>");
 			_DIALOG.add(_progress);	
 			
 			
@@ -276,7 +259,7 @@ public class ChangeTableOwner {
 											else if (row.toString().charAt(k) == '>') { tag = false; continue; }
 											if (!tag) { table += row.toString().charAt(k); }
 										}
-										_TABLE_LIST.add(table.split(":")[1]); 
+										_TABLE_LIST.add(table); 
 									}
 								}
 							}
@@ -372,16 +355,14 @@ public class ChangeTableOwner {
 				}
 				path = p.split(",");
 				String host = null;
-				String server = null;
 				try {
 					JQueryPane panel = MainWindow.getQueryPaneByHost(path[1]); 
 					host = panel.getParameters().getHost();
-					server = (panel.getConnection().getServerType() == 0 ? "MySQL://" : "MsSQL://");
 				}
 				catch (Exception e) { }
-				location = (server != null ? server : "") + (host != null ? host : "") + "/<u>"+path[2]+"</u>";
-				//_progress.setText("<html><font color='blue'>Aguardando conexão com o servidor <b>"+location+"</b></font></html>");
-				//_progress.setItemProgress(100.f);
+				location = (host != null ? host : "") + "/<u>"+path[2]+"</u>";
+				_progress.setText("<html><font color='blue'>Aguardando conexão com o servidor <b>" + location + "</b></font></html>");
+				_progress.setItemProgress(100.f);
 			}
 			public void run() {
 				if (path == null) {
@@ -400,7 +381,6 @@ public class ChangeTableOwner {
 				_progress.setText("<html><font color='blue'>Aguardando conexão com o servidor <b>"+location+"</b></font></html>");
 				_progress.setItemProgress(100.f);
 				
-				
 				reconnect(parameters.getConnectorDriver(), parameters.getConnectionString(), parameters.getUser(), parameters.getPass());
 				if (_CONNECTION != null && _CONNECTION.isConnected()) {
 					((DatabaseTreeCellRender)_database.getCellRenderer()).updateSelectionDatabase(_SELECTED_DATABASE, _SELECTED_HOST);
@@ -409,9 +389,9 @@ public class ChangeTableOwner {
 					getTableList(path[2]);
 					_database.revalidate();
 					_database.repaint();
-					_progress.setText("<html><font color='green'>Conectado a database <b>"+location+"</b></font></html>");
+					_progress.setText("<html>Conectado a database <font color='green'><b>" + location + "</b></font></html>");
 					try {
-						ResultSet rs = _CONNECTION.executeQuery("SELECT name FROM sysusers WHERE issqluser=1");
+						ResultSet rs = _CONNECTION.executeQuery("SELECT name FROM sysusers");
 						_new.removeAllItems();
 						_old.removeAllItems();
 						while (rs != null && rs.next()) {
@@ -462,18 +442,22 @@ public class ChangeTableOwner {
 			_list.repaint();
 		}
 		
-		
 		public void executeChange() {
 			if (_TABLE_LIST != null) {
 				System.gc();
 			}
 			if (_TABLE_LIST != null && _TABLE_LIST.size() > 0) {
-				doChange repair = new doChange(_TABLE_LIST.get(0));
+				String[] table = _TABLE_LIST.get(0).split(":");
+						
+				doChange repair = new doChange(table[1], table[0]);
 				_thread = new Thread(repair);
 				_thread.start();
 			}
 			else {
 				JOptionPane.showMessageDialog(null, "<html>O processo de <b>substituição de owner</b> das tabelas foi concluido." + (_errors_io > 0 ? " Foram encontrados: " + _errors_io + " erros durante o processo" : "") + "</html>", "JQueryAnalizer - Conclusão!", JOptionPane.OK_OPTION);
+				getTableList(_SELECTED_DATABASE);
+				_progress.setMainProgress(0f);
+				_progress.setItemProgress(0f);
 				toogleActions(true);
 			}
 		}
@@ -501,7 +485,6 @@ public class ChangeTableOwner {
 				_SELECTED_DATABASE = null;
 				_SELECTED_HOST = null;
 			}
-			@Override
 			public void run() {
 				_DATABASE_COUNT = 0;			
 				JTabbedPane tabs = MainWindow.getTabs();
@@ -509,7 +492,6 @@ public class ChangeTableOwner {
 				JQueryPane pane = null;
 				SQLConnectionManager con = null;
 				ResultSet rs = null;
-				//String[] databases = null;
 				String database = null;
 				DefaultMutableTreeNode root = new DefaultMutableTreeNode("Conexões disponíveis");
 				DefaultTreeModel model = (DefaultTreeModel)_database.getModel();
@@ -519,16 +501,34 @@ public class ChangeTableOwner {
 					if (c != null && c instanceof JQueryPane) {
 						pane = (JQueryPane)c;
 						con = pane.getConnection();
-						if (con == null || con.getServerType() != 1) continue;
+						if (con == null || con.getServerType() != SQLConnectionManager.DB_MSSQL) {
+							continue;
+						}
 						host = pane.getParameters().getHost().split(":")[0]; 
 						DefaultMutableTreeNode child = new DefaultMutableTreeNode(host != null ? host : "?");
 						root.add(child);
 						if (con != null && con.isConnected()) {
 							try {
-								rs = con.executeQuery("select catalog_name, schema_owner from information_schema.schemata");
+								String query = null;
+								switch (con.getVersion()) {
+									case "MS2000":
+//										query = "SELECT suser_sname(owner_sid), name FROM sys.databases";
+//										break;
+									case "MS2005":
+									case "MS2008":
+									case "MS2012":
+									case "MS2014":
+										query = "SELECT suser_sname(sid), name FROM master.dbo.sysdatabases";
+										break;
+									default:
+										_DIALOG.dispose();
+										JOptionPane.showMessageDialog(null, "Este recurso não é compatível com a versão do SQL Server que você está usando: " + con.getVersion(), "JQueryAnalizer - Aviso", JOptionPane.WARNING_MESSAGE);
+										return;
+								}
+								rs = con.executeQuery(query);
 								while (rs != null && rs.next()) {
 									database = rs.getString(2);
-									database = "<i><font color='#777777'>" + (database != null ? database : "?") + "</font></i><font color='#FFFFFF'>:</font>" + rs.getString(1);
+									database = "<i><font color='#777777'>" + rs.getString(1) + "</font></i><font color='#FFFFFF'>:</font>" + (database != null ? database : "?");
 									child.add(new DefaultMutableTreeNode("<html>" + database + "</html>"));
 								}
 								if (child.getChildCount() > 0) {
@@ -578,15 +578,19 @@ public class ChangeTableOwner {
 			if (_CONNECTION != null && _CONNECTION.isConnected()) {
 				_SELECTED_DATABASE = database;
 				try {
-					_CONNECTION.executeUpdate("USE " + (_CONNECTION.getServerType() == 0 ? "`" + db.trim() + "`" : db));
+					_CONNECTION.executeUpdate("USE " + (_CONNECTION.getServerType() == 0 ? "`" + db.trim() + "`" : db.trim()));
 					int size = 0;
 					String table = null;
-					ResultSet rs = _CONNECTION.executeQuery("SELECT table_schema, table_name FROM information_schema.tables WHERE table_type LIKE '%table%'");
+					String owner = null;
+					ResultSet rs = _CONNECTION.executeQuery("sp_tables");
 					while (rs != null && rs.next()) {
-						++size;
-						table = rs.getString(1);
-						table = "<i><font color='#777777'>" + (table != null ? table : "?") + "</font></i><font color='#FFFFFF'>:</font>" + rs.getString(2);
-						row.add(new JCheckTreeNode("<html>" + table + "</html>"));
+						if (rs.getString(4).equalsIgnoreCase("TABLE")) {
+							++size;
+							owner = rs.getString(2);
+							table = rs.getString(3);
+							table = "<i><font color='#777777'>" + (owner != null ? owner : "?") + "</font></i><font color='#FFFFFF'>:</font>" + table;
+							row.add(new JCheckTreeNode("<html>" + table + "</html>"));
+						}
 					}
 					if (size > 0) {
 						_run.setEnabled(true);
@@ -608,8 +612,10 @@ public class ChangeTableOwner {
 		
 		public class doChange implements Runnable {
 			private String _TABLE;
-			public doChange (String table) {
+			private String _OWNER;
+			public doChange (String table, String owner) {
 				_TABLE = table;
+				_OWNER = owner;
 			}
 			@Override
 			public void run() {
@@ -619,10 +625,25 @@ public class ChangeTableOwner {
 						_progress.setText("<html>Andamento da substituição: <b>" + ((int)perc) + "%</b> concluido! <u>" + _TABLE + "</u></html>");
 						_progress.setItemProgress(50.f);
 						_progress.setMainProgress(perc);
-						Exception e1 = _CONNECTION.executeUpdate("SP_CHANGEOBJECTOWNER '" + _old.getSelectedItem().toString() + "." + _TABLE + "','" + _new.getSelectedItem().toString() + "'");
+						Exception e1 = null;
+						switch (_CONNECTION.getVersion()) {
+							case "MS2000":
+								e1 = _CONNECTION.executeUpdate("SP_CHANGEOBJECTOWNER '" + _old.getSelectedItem().toString() + "." + _TABLE + "','" + _new.getSelectedItem().toString() + "'");
+								break;
+							case "MS2005":
+							case "MS2008":
+							case "MS2012":
+							case "MS2014":
+								e1 = _CONNECTION.executeUpdate(("ALTER SCHEMA [NEW] TRANSFER [OLD].[TABLE]").replace("[NEW]", _new.getSelectedItem().toString()).replace("[OLD]", _OWNER).replace("[TABLE]", _TABLE));
+								break;
+							default:
+								_DIALOG.dispose();
+								JOptionPane.showMessageDialog(null, "Este recurso não é compatível com a versão do SQL Server que você está usando: " + _CONNECTION.getVersion(), "JQuery Analizer - Aviso", JOptionPane.WARNING_MESSAGE);
+								return;
+						}
 						_progress.setItemProgress(100.f);
-						if (e1 == null) {
-							
+						if (e1 != null) {
+							JOptionPane.showMessageDialog(null, "Erro ao executar a substituição do proprietário da tabela: " + _TABLE + ".\nErro: " + e1.getMessage(), "JQuery Analizer - Erro", JOptionPane.ERROR_MESSAGE);
 						}
 					}
 				}

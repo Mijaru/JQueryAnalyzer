@@ -63,7 +63,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class MainWindow {
 	public static boolean _debug = false;
-	private String _version = "v.3.11 11/05/2015";
+	private String _version = "v.3.12 13/05/2015";
 	private JParametersPanel _PARAMETERS;
 	private static JPanel _MENU_MAIN;
 	private static int _ACTIVE_TAB_INDEX;
@@ -339,19 +339,15 @@ public class MainWindow {
         _MAIN.getContentPane().add(_tabbed_pane, _layout);
         
         _tab_query_icon = new ImageIcon(ClassLoader.getSystemResource("window.png"));
-        //_tab_query_icon.setImage(_tab_query_icon.getImage().getScaledInstance(32, 32, 50));
         _tab_query_icon.setImage(_tab_query_icon.getImage().getScaledInstance(24, 24, 50));
         
         _tab_gauge_icon = new ImageIcon(ClassLoader.getSystemResource("gauge.png"));
-        //_tab_gauge_icon.setImage(_tab_gauge_icon.getImage().getScaledInstance(32, 32, 50));
         _tab_gauge_icon.setImage(_tab_gauge_icon.getImage().getScaledInstance(24, 24, 50));
         
         _tab_add_icon = new ImageIcon(ClassLoader.getSystemResource("window_new.png"));
-        //_tab_add_icon.setImage(_tab_add_icon.getImage().getScaledInstance(32, 32, 50));
         _tab_add_icon.setImage(_tab_add_icon.getImage().getScaledInstance(24, 24, 50));
         
         _tab_del_icon = new ImageIcon(ClassLoader.getSystemResource("window_delete.png"));
-        //_tab_del_icon.setImage(_tab_del_icon.getImage().getScaledInstance(32, 32, 50));
         _tab_del_icon.setImage(_tab_del_icon.getImage().getScaledInstance(24, 24, 50));
         
         final JPanel tab_del = new JPanel();
