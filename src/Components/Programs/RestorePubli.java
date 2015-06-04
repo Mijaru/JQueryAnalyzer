@@ -71,7 +71,7 @@ public class RestorePubli {
 		}
 		
 		
-		_DIALOG = new JQDialog(MainWindow.getMainFrame(), "JQueryAnalizer - Assistente para restauração de backup's [JQueryAnalizer v1.1]");
+		_DIALOG = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Assistente para restauração de backup's [Publi]");
 		Dimension size = new Dimension(500, 200);
 		_DIALOG.setMaximumSize(size);
 		_DIALOG.setMinimumSize(size);
@@ -81,42 +81,31 @@ public class RestorePubli {
 		_DIALOG.setLayout(null);
 		_DIALOG.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		_DIALOG.addWindowListener(new WindowListener(){
-			@Override
 			public void windowActivated(WindowEvent a) { }
-			@Override
 			public void windowClosed(WindowEvent a) { }
 			@SuppressWarnings("deprecation")
-			@Override
 			public void windowClosing(WindowEvent arg0) {
 				if (_thread != null && _thread.isAlive()) {
 					int option = JOptionPane.showConfirmDialog(_DIALOG, "Existe uma restauração de backup em execução, tem certeza que deseja interromper?", "Confirmação", JOptionPane.YES_OPTION);
 					if (option == JOptionPane.YES_OPTION) {
 						_thread.stop();
 						_thread = null;
-						System.out.println("*** Restauração de backup abortada!");
 					}
 					else {
 						return;
 					}
 				}
 				_DIALOG.dispose();
-				System.out.println("*** Restauração de backup finalizada pelo usuario!");
 			}
-			@Override
 			public void windowDeactivated(WindowEvent a) { }
-			@Override
 			public void windowDeiconified(WindowEvent a) { }
-			@Override
 			public void windowIconified(WindowEvent a) { }
-			@Override
 			public void windowOpened(WindowEvent a) { }
-				
 		});
 		JLabel text1 = new JLabel();
 		text1.setFont(new Font("Verdana",Font.PLAIN,12));
-		text1.setText("<html>Selecione o <font color=black><i>arquivo de origem</i></font>:</html>");
+		text1.setText("<html>Selecione o <b>arquivo de origem</b>:</html>");
 		text1.setBounds(10,5,475,20);
-		text1.setForeground(Color.DARK_GRAY);
 		text1.setOpaque(true);
 		_DIALOG.add(text1);
 		
@@ -126,19 +115,18 @@ public class RestorePubli {
 		
 		JLabel text4 = new JLabel();
 		text4.setFont(new Font("Verdana",Font.PLAIN,12));
-		text4.setText("<html>Andamento da <font color=black><i>restauração do backup</i></font>:</html>");
+		text4.setText("<html><b>Progresso</b> da restauração do backup:</html>");
 		text4.setBounds(10,60,475,20);
-		text4.setForeground(Color.DARK_GRAY);
 		text4.setOpaque(true);
 		_DIALOG.add(text4);
 		
 		_progress = new JProgressLabel();
 		_progress.setPanelBounds(10,80,475,35);
-		_progress.setText("<html><font color='#009900'>Assistente pronto para inciar a restauração do backup!</font></html>");
+		_progress.setText("<html>Assistente pronto para inciar a restauração do backup!</html>");
 		_DIALOG.add(_progress);	
 		
 		
-		_run = new JButton("<html><u>I</u>niciar Importação</html>");
+		_run = new JButton("<html>Iniciar Importação</html>");
 		_run.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
 		_run.setMnemonic(KeyEvent.VK_I);
 		_run.setBounds(255,125,150,40);
@@ -155,7 +143,7 @@ public class RestorePubli {
 		});
 		_DIALOG.add(_run);
 			
-		_close = new JButton("<html><u>S</u>air</html>");
+		_close = new JButton("<html>Sair</html>");
 		_close.setMnemonic(KeyEvent.VK_S);
 		_close.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
 		_close.setBounds(410,125,75,40);
@@ -169,7 +157,7 @@ public class RestorePubli {
 		_DIALOG.add(_close);
 			
 		JLabel opcoes = new JLabel();
-		opcoes.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), " Codificação do arquivo de backup ", SwingConstants.CENTER, SwingConstants.CENTER, _default_font, Color.DARK_GRAY));
+		opcoes.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "<html>&nbsp;<b>Codificação</b> do arquivo de backup&nbsp;</html>", SwingConstants.CENTER, SwingConstants.CENTER, _default_font, Color.BLACK));
 		opcoes.setBounds(10, 120, 235, 45);
 		_DIALOG.add(opcoes);
 		

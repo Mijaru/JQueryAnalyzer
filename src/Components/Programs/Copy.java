@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -16,8 +17,9 @@ import java.io.UnsupportedEncodingException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -25,11 +27,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
+import javax.swing.border.AbstractBorder;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
-
-import javolution.util.FastList;
 
 import Components.MainWindow;
 import Components.SQLConnectionManager;
@@ -41,7 +42,7 @@ public class Copy {
 	private JFrame _DIALOG = null;
 	private JTree _list;
 	private JButton _close;
-	private FastList<String> _TABLE_LIST = new FastList<String>();
+	private List<String> _TABLE_LIST = new ArrayList<String>();
 	private int _TABLE_LIST_SIZE;
 	private SQLConnectionManager _CONNECTION_ORIG;
 	private SQLConnectionManager _CONNECTION_DEST;
@@ -55,19 +56,18 @@ public class Copy {
 	private JButton _run;
 	public Copy() {
 		_DIALOG = new JFrame();
-		_DIALOG.setTitle("JQueryAnalizer - Assistente para Cópia de databases v1.0a");
-		_DIALOG.setMaximumSize(new Dimension(500,500));
-		_DIALOG.setMinimumSize(new Dimension(500,500));
-		_DIALOG.setPreferredSize(new Dimension(500,500));
+		_DIALOG.setTitle("JQuery Analizer - Assistente para Cópia de databases [MySQL]");
+		_DIALOG.setMaximumSize(new Dimension(500,510));
+		_DIALOG.setMinimumSize(new Dimension(500,510));
+		_DIALOG.setPreferredSize(new Dimension(500,510));
 		_DIALOG.setLocationRelativeTo(null);
 		_DIALOG.setResizable(false);
 		_DIALOG.setLayout(null);
 		_DIALOG.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		_DIALOG.setIconImage(new ImageIcon(ClassLoader.getSystemResource("gauge.png")).getImage());
-			// database de origem <-
-		JLabel text2 = new JLabel("<html>Selecione a <i>database</i> de <u>origem</u>:</html>");
+		_DIALOG.setIconImages(MainWindow.getMainIconList());
+		// database de origem <-
+		JLabel text2 = new JLabel("<html>Selecione a <i>database</i> de <b>origem</b>:</html>");
 		text2.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
-		text2.setForeground(Color.GRAY);
 		text2.setBounds(10,5,475,20);
 		_DIALOG.add(text2);
 		
@@ -76,40 +76,38 @@ public class Copy {
 		_origem.setOpaque(true);
 		_origem.setBorder(null);
 		_origem.setCellRenderer(new DatabaseTreeCellRender(null, null));
-		_origem.setRowHeight(18);
-		_origem.setBackground(new Color(193, 255, 193));
+		_origem.setRowHeight(22);
+		_origem.setBackground(new Color(240, 255, 240));
 		JScrollPane scrolls_1 = new JScrollPane(_origem);
 		scrolls_1.setBounds(10,25,215,163);
 		scrolls_1.setAutoscrolls(true);
 		_DIALOG.add(scrolls_1);
 		_origem.addKeyListener(new KeyListener(){
-			@Override
 			public void keyPressed(KeyEvent event) {
 				if (event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') { selectOriginDatabase(); }
 			}
-			@Override
 			public void keyReleased(KeyEvent event) { }
-			@Override
 			public void keyTyped(KeyEvent event) { }
 		});
 		_origem.addMouseListener(new MouseListener(){
-			@Override
 			public void mouseClicked(MouseEvent event) { }
-			@Override
 			public void mouseEntered(MouseEvent event) { }
-			@Override
 			public void mouseExited(MouseEvent event) { }
-			@Override
 			public void mousePressed(MouseEvent event) { 
 				if (event.getClickCount() >= 2) { selectOriginDatabase(); } 
 			}
-			@Override
 			public void mouseReleased(MouseEvent event) { }				
 		});
-			// database de destino <-
-		JLabel text3 = new JLabel("<html>Selecione a <i>database</i> de <u>destino</u>:</html>");
+		_origem.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
+
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
+
+		JLabel text3 = new JLabel("<html>Selecione a <i>database</i> de <b>destino</b>:</html>");
 		text3.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
-		text3.setForeground(Color.GRAY);
 		text3.setBounds(10,191,475,20);
 		_DIALOG.add(text3);
 		
@@ -118,47 +116,44 @@ public class Copy {
 		_destino.setOpaque(true);
 		_destino.setBorder(null);
 		_destino.setCellRenderer(new DatabaseTreeCellRender(null, null));
-		_destino.setRowHeight(18);
-		_destino.setBackground(new Color(255, 193, 193));
+		_destino.setRowHeight(22);
+		_destino.setBackground(new Color(255,240,240));
 		JScrollPane scrolls_2 = new JScrollPane(_destino);
 		scrolls_2.setBounds(10,212,215,163);
 		scrolls_2.setAutoscrolls(true);
 		_DIALOG.add(scrolls_2);
 		_destino.addKeyListener(new KeyListener(){
-			@Override
 			public void keyPressed(KeyEvent event) {
 				if (event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') { selectDestinationDatabase(); }
 			}
-			@Override
 			public void keyReleased(KeyEvent event) { }
-			@Override
 			public void keyTyped(KeyEvent event) { }
 		});
 		_destino.addMouseListener(new MouseListener(){
-			@Override
 			public void mouseClicked(MouseEvent event) { }
-			@Override
 			public void mouseEntered(MouseEvent event) { }
-			@Override
 			public void mouseExited(MouseEvent event) { }
-			@Override
 			public void mousePressed(MouseEvent event) { 
 				if (event.getClickCount() >= 2) { selectDestinationDatabase(); } 
 			}
-			@Override
 			public void mouseReleased(MouseEvent event) { }				
 		});
-			
+		_destino.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
+
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
 		
 		// tabelas da database a serem salvas <-
-		JLabel text4 = new JLabel("<html>Selecione as <i>tabelas</i> (na origem):</html>");
+		JLabel text4 = new JLabel("<html>Selecione as <i>tabelas</i> <b>(na origem)</b>:</html>");
 		text4.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
-		text4.setForeground(Color.GRAY);
 		text4.setBounds(230,5,475,20);
 		_DIALOG.add(text4);
 		
 		_list = new JTree(new DefaultMutableTreeNode("Selecione uma database!"));
-		_list.getRootPane();
+		_list.setRowHeight(22);
 		_list.setCellRenderer(new TableTreeCellRender());
 		_list.setOpaque(true);
 		JScrollPane scrolls = new JScrollPane(_list);
@@ -166,35 +161,33 @@ public class Copy {
 		scrolls.setAutoscrolls(true);
 		_DIALOG.add(scrolls);
 		_list.addKeyListener(new KeyListener() {
-			@Override
 			public void keyPressed(KeyEvent event) {
 				if ((event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') && event.getComponent() != null && event.getComponent() instanceof JTree) { selectOriginTable(); }
 			}
-			@Override
 			public void keyReleased(KeyEvent a) { }
-			@Override
 			public void keyTyped(KeyEvent a) { }
 		});
 		_list.addMouseListener(new MouseListener() {
-			@Override
 			public void mouseClicked(MouseEvent event) { }
-			@Override
 			public void mouseEntered(MouseEvent event) { }
-			@Override
 			public void mouseExited(MouseEvent event) { }
-			@Override
 			public void mousePressed(MouseEvent event) { 
 				if (event.getClickCount() >= 2) { selectOriginTable(); } 
 			}
-			@Override
 			public void mouseReleased(MouseEvent event) { }
 		});
-			
+		_list.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
+
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
 		
-		_run = new JButton("<html><u>I</u>niciar cópia</html>");
+		
+		_run = new JButton("Iniciar cópia");
 		_run.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
 		_run.addActionListener(new ActionListener(){
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				if ((_CONNECTION_ORIG == null || (_CONNECTION_ORIG != null && !_CONNECTION_ORIG.isConnected()))) {
 					JOptionPane.showMessageDialog(null, "<html>A conexão com o <b>banco de dados de origem</b> não está disponível!<br><i>Verifique a conectividade com o bancos de dados de origem e tente novamente!</i></html>", "Alerta!", JOptionPane.OK_OPTION);
@@ -212,10 +205,8 @@ public class Copy {
 					}
 				}
 				toogleActions(false);
-				//_system_charset = System.getProperty("file.encoding");
-
 				TreeModel model = _list.getModel();
-				_TABLE_LIST = new FastList<String>(); 
+				_TABLE_LIST = new ArrayList<String>(); 
 				for (int i = 0; i < model.getChildCount(model.getRoot()); i++) {
 					if (model.getChild(model.getRoot(), i) instanceof DefaultMutableTreeNode) {
 						DefaultMutableTreeNode node = (DefaultMutableTreeNode)model.getChild(model.getRoot(), i);
@@ -250,14 +241,14 @@ public class Copy {
 		
 		});
 		_run.setMnemonic(KeyEvent.VK_E);
-		_run.setBounds(255,440,150,25);
+		_run.setBounds(256,440,150,35);
 		_run.setEnabled(false);
 		_DIALOG.add(_run);
 	
-		_close = new JButton("<html><u>S</u>air</html>");
+		_close = new JButton("Sair");
 		_close.setMnemonic(KeyEvent.VK_S);
 		_close.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
-		_close.setBounds(410,440,75,25);
+		_close.setBounds(411,440,75,35);
 		_close.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent event) {
@@ -271,9 +262,8 @@ public class Copy {
 		_DIALOG.add(_close);
 		
 		
-		_text5 = new JLabel("<html><i>Progresso</i> da cópia:</html>");
+		_text5 = new JLabel("<html><b>Progresso</b> da cópia:</html>");
 		_text5.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
-		_text5.setForeground(Color.GRAY);
 		_text5.setBounds(10,380,475,20);
 		_text5.setOpaque(true);
 		_DIALOG.add(_text5);
@@ -288,18 +278,12 @@ public class Copy {
 		getDatabaseDestinationList();
 		
 		_DIALOG.addWindowListener(new WindowListener(){
-
-			@Override
 			public void windowActivated(WindowEvent a) { }
-			@Override
 			public void windowClosed(WindowEvent a) { }
-			@SuppressWarnings("deprecation")
-			@Override
 			public void windowClosing(WindowEvent arg0) {
 				if (_thread != null && _thread.isAlive()) {
 					int option = JOptionPane.showConfirmDialog(_DIALOG, "Existe uma cópia de databases em execução, tem certeza que deseja interromper a cópia?", "Confirmação", JOptionPane.YES_OPTION);
 					if (option == JOptionPane.YES_OPTION) {
-						_thread.stop();
 						_thread = null;
 						return;
 					}
@@ -311,15 +295,10 @@ public class Copy {
 				if (_CONNECTION_DEST != null && _CONNECTION_DEST.isConnected()) {
 					_CONNECTION_DEST.closeConnection();
 				}
-				System.out.println("*** Copia abortada!");
 			}
-			@Override
 			public void windowDeactivated(WindowEvent a) { }
-			@Override
 			public void windowDeiconified(WindowEvent a) { }
-			@Override
 			public void windowIconified(WindowEvent a) { }
-			@Override
 			public void windowOpened(WindowEvent a) { }
 				
 		});

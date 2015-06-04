@@ -175,11 +175,11 @@ public class SQLConnectionManager {
 		   
 	   }
 	   catch (ClassNotFoundException c) {
-		   System.out.println("Driver JDBC Não encontrado"); 
+		   c.printStackTrace();
 	   }
 	   catch (SQLException s) {
-		   this._last_exception = s;
-		   System.out.println("*** Erro conectando na base de dados: " + s.getMessage());
+		   _last_exception = s;
+		   s.printStackTrace();
 		   _connection_info = s.getMessage();
 	   }
    }
@@ -201,10 +201,10 @@ public class SQLConnectionManager {
 			_connection = null;  
 		}
 		catch (ClassNotFoundException e) {
-			System.out.println("Driver JDBC Não encontrado"); 
+			e.printStackTrace();
 		}
 		catch (Exception e2) {
-			System.out.println("Falha desconhecida ao desconectar o Banco de Dados: \n" + e2);  
+			e2.printStackTrace();
 		}
 	}
 	 
@@ -299,7 +299,6 @@ public class SQLConnectionManager {
 				executeUpdate("USE `" + database + "`"); 
 				break;
 			case 1:
-				System.out.println("Oracle - trocando schema!");
 				Exception e = executeUpdate("ALTER SESSION SET CURRENT_SCHEMA=" + database); 
 				if (e != null) {
 					e.printStackTrace();
@@ -440,7 +439,6 @@ public class SQLConnectionManager {
 					case DB_MYSQL: 
 						version = getVariable("version");
 						stmt.execute(version != null && version.startsWith("4.") ? "SHOW TABLES" : "SELECT TABLE_NAME from information_schema.tables WHERE TABLE_SCHEMA='" + getDatabase() + "' AND TABLE_TYPE LIKE '%TABLE%'");
-						System.out.println(version != null && version.startsWith("4.") ? "SHOW TABLES" : "SELECT TABLE_NAME from information_schema.tables WHERE TABLE_SCHEMA='" + getDatabase() + "' AND TABLE_TYPE LIKE '%TABLE%'");
 						break;
 					// -- Oracle
 					case DB_ORACLE: 
@@ -472,9 +470,6 @@ public class SQLConnectionManager {
 				}
 				rs.close();
 	   			stmt.close();
-	   			if (_debug) {
-	   				System.out.println("<- src.Components.SQLConnectionManager$getTables() ->> [Return] ~> " + out);
-	   			}
 	   			_tables = out;
 	   			return out;
 			}
@@ -677,9 +672,6 @@ public class SQLConnectionManager {
 				}
 				_time = (System.currentTimeMillis() - _time) / 1000.D;
 			}
-			else {
-				System.out.println("Falha ao realizar consulta no banco de dados: a conexão não está disponível.");
-			}
 			_ready = true;
 			return result;
 		}
@@ -691,7 +683,7 @@ public class SQLConnectionManager {
 					pane.updateQueryStatus("A consulta SQL: <font color=blue><u>" + consulta.subSequence(0, consulta.length() > 64 ? 64 : consulta.length()) + "</u></font> retornou a seguinte messagem de erro: ", e);
 				}
 				_last_exception = e;
-				System.out.println(e.getMessage());
+				e.printStackTrace();
 			}
 			_ready = true;
 			return null;
@@ -723,7 +715,7 @@ public class SQLConnectionManager {
 	/**	Sintaxe:											 			  */
 	/** @INSERT REGISTER_CLOB col INTO table WHERE cond VALUES ('ABCDE')  */
 	/**	----------------------------------------------------------------- */
-	 @SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation")
 	public boolean insertClob(String query)  {
 		   ResultSet rs = null;
 		   PreparedStatement statement = null;
@@ -777,7 +769,7 @@ public class SQLConnectionManager {
 								   statement.close();
 							   }
 							   catch (Exception e) {
-								   System.out.println("SQL_SEQ> " + "SELECT " + table + "_" + pk_name + "_SEQ.currval FROM dual" + "\r\nErro> " + e.getMessage());
+								   e.printStackTrace();
 							   }
 							   continue;
 						   }
@@ -791,9 +783,6 @@ public class SQLConnectionManager {
 				   Clob clob = rs.getClob(field);  
 				   char[] cbuf = new char[1024];
 				   text = getDefaultString(value.toString());
-				   if (text.length() < 4) {
-					   System.out.println(text);
-				   }
 				   Reader cin = new StringReader(text.substring(2,text.length() - 4).replace("'", "''"));
 				   // -- Específico para o driver oracle
 				   Writer cout = ((CLOB)clob).getCharacterOutputStream();
@@ -812,7 +801,7 @@ public class SQLConnectionManager {
 			   }
 		   }
 		   catch (Exception e) {
-			   System.out.println("SQL> " + sql + "\r\nErro> " + e.getMessage());
+			   e.printStackTrace();
 			   try {
 				   if (rs != null) {
 					   rs.close();
@@ -956,9 +945,6 @@ public class SQLConnectionManager {
 	/** Caso os valores start = offset = 0 retorna tudo.      */
 	/**	----------------------------------------------------- */
 	public ResultSet getTableData(String table, int start, int offset) {
-		if (_debug) {
-			System.out.println("<- src.Components.SQLConnectionManager.getTableData() ->> table=" + table + ", start=" + start + ", offset=" + offset);
-		}
 		PreparedStatement st = null;
 		ResultSet rs = null;
 		String pk = null;
@@ -1101,6 +1087,7 @@ public class SQLConnectionManager {
 						while (rs != null && !rs.isClosed() && rs.next()) {
 							out.append(rs.getString(2));
 						}
+						out.append(";\r\n");
 					}
 					catch (Exception e) { e.printStackTrace(); }
 				}
@@ -1110,13 +1097,16 @@ public class SQLConnectionManager {
 						for (int i = 1; i <= rs_meta.getColumnCount(); i++) {
 							out.append("\t");
 							out.append(getFieldSQL(rs_meta.getColumnName(i), rs_meta, destination));
-							out.append(",\r\n");
+							out.append(i == rs_meta.getColumnCount() ? "" : ",\r\n");
 						}
-						out.append(("\tPRIMARY KEY ([pk])\r\n);\r\n").replace("[pk]", pk == null ? "" : pk));
+						if (pk != null) {
+							out.append((",\r\n\tPRIMARY KEY ([pk])").replace("[pk]", pk == null ? "" : pk));
+						}
+						out.append("\r\n);\r\n");
 					}
 					catch (Exception e) { e.printStackTrace(); }
 				}
-				return (pk != null ? out.toString() : null);
+				return (out.length() > 0 ? out.toString() : null);
 				
 			case DB_MSSQL:
 				try {
@@ -1124,19 +1114,18 @@ public class SQLConnectionManager {
 					for (int i = 1; i <= rs_meta.getColumnCount(); i++) {
 						out.append("\t");
 						out.append(getFieldSQL(rs_meta.getColumnName(i), rs_meta, destination));
-						out.append(",\r\n");
+						out.append(i == rs_meta.getColumnCount() ? "" : ",\r\n");
 					}
-					out.append(("\tPRIMARY KEY ([pk])\r\n);\r\n").replace("[pk]", pk == null ? "" : pk));
+					if (pk != null) {
+						out.append((",\r\n\tPRIMARY KEY ([pk])").replace("[pk]", pk == null ? "" : pk));
+					}
+					out.append("\r\n);\r\n");
 				}
 				catch (Exception e) { e.printStackTrace(); }
 				return (pk != null ? out.toString() : null);
 		}
 		return null;
 	}
-	
-	
-	
-	
 	
 	/**	===================================================== */
 	/** Retorna a estrutura dos índices de uma tabela		  */
@@ -1289,36 +1278,6 @@ public class SQLConnectionManager {
 							case Types.BLOB:
 								out.append(length < 255 ? "VARBINARY" : "BLOB");
 								break;
-							//case Types.BINARY:
-							//	out.append(("BINARY([length])".replace("[length]", String.valueOf(length))));
-							//	break;
-							//case Types.LONGVARBINARY:
-							//case Types.VARBINARY:
-							//case Types.BLOB:
-							//	out.append(length < 255 ? "VARBINARY" : "IMAGE");
-							//	break;
-							//case Types.CLOB:
-							//case Types.LONGVARCHAR:
-							//case Types.VARCHAR:
-							//case Types.CHAR:
-							//	out.append(length < 255 ? ("VARCHAR([length])").replace("[length]", String.valueOf(length)) : "TEXT");
-							//	break;
-							//case Types.BIGINT:
-							//case Types.TINYINT:
-							//case Types.INTEGER:
-							//	out.append("INT");
-							//	break;
-							//case Types.BIT:
-							//	out.append("TINYINT");
-							//	break;
-							//case Types.TIMESTAMP:
-							//	out.append("DATETIME");
-							//	break;
-							//case Types.NUMERIC:
-							//case Types.DECIMAL:
-							//case Types.REAL:
-							//	out.append(("NUMERIC([length],[precision])").replace("[length]", String.valueOf(length)).replace("[precision]", String.valueOf(precision)));
-							//	break;
 							default:
 								System.out.println("<- src.MainWindowComponents.SQLConnectionManager.getFieldSQL ->> Unknow field type (MSSQL): name=" + name + ", field=" + field + ", type=" + type + ", length=" + length + ", precision=" + precision + ", isnull=" + isnullable);
 						}
@@ -1449,7 +1408,7 @@ public class SQLConnectionManager {
 		String pk_name = null;
 		try {
 			if (this.getServerType() == 3) { // apenas para sql server.
-				ResultSet rs = executeQuery("SELECT * FROM " + table + " WHERE 1=0");
+				ResultSet rs = executeQuery(("SELECT * FROM [table] WHERE 1=0").replace("[table]", table));
 				ResultSetMetaData column_structure = rs.getMetaData();
 				for (int i = 1; i <= column_structure.getColumnCount(); i++) {
 					if (column_structure.isAutoIncrement(i) && column_structure.isNullable(i) == 0) {
@@ -1466,7 +1425,7 @@ public class SQLConnectionManager {
 				}
 				fields.append("#FOE#");
 				rs.close();
-				rs  = executeQuery("SELECT COUNT(*) FROM " + table);
+				rs  = executeQuery(("SELECT COUNT(*) FROM [table]").replace("[table]", table));
 				int reg_count = 0;
 				try {
 					while (rs.next()) {
@@ -1485,22 +1444,28 @@ public class SQLConnectionManager {
 		catch (Exception e) { e.printStackTrace(); }
 		
 		switch (this.getServerType()) {
-			case 0:
-			case 2:
+			case DB_MYSQL:
+			case DB_POSTGREE:
 				try {
 					Connection con = getConnection();
 					if (con != null && !con.isClosed()) {
 						Statement statement = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 						ResultSet rs = null;
-						String query = null;
+						String sql = null;
 						if (limit > 0) {
-							query = "SELECT " + (dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*") + " FROM " + table + " LIMIT " + limit + " OFFSET " + offset;// + " ORDER BY " + pk_name;
-							rs = statement.executeQuery(query);
+							sql = ("SELECT [fields] FROM [table] LIMIT [a] OFFSET [b]");
+							sql = sql.replace("[fields]", dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*");
+							sql = sql.replace("[table]", table);
+							sql = sql.replace("[a]", String.valueOf(limit));
+							sql = sql.replace("[b]", String.valueOf(offset));
+							rs = statement.executeQuery(sql);
 							return rs; 
 						}
 						else {
-							query = "SELECT " + (dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*") + " FROM " + table;
-							rs = statement.executeQuery(query);
+							sql = ("SELECT [fields] FROM [table]");
+							sql = sql.replace("[fields]", dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*");
+							sql = sql.replace("[table]", table);
+							rs = statement.executeQuery(sql);
 							return rs; 							
 						}
 					}
@@ -1509,75 +1474,38 @@ public class SQLConnectionManager {
 					e1.printStackTrace();
 				}
 				return null;
-			case 1:
 				
-				System.out.println("-- oracle database dump data");
-				// arquivo de origem = oracle ~ Destino = 0: MySQL + 1: Oracle + 2: PostgreSQL | 3: SQL Server
+			case DB_ORACLE:
 				try {
 					Connection con = getConnection();
 					if (con != null && !con.isClosed()) {
-						// PAGINACAO NO ORACLE! 
-/*
- * 
-public class FormatSQL {  
-  
-    public static String paging(String strSQL, int intInicio, int intLimite) {  
-        return "SELECT * FROM (SELECT PAGING.*, ROWNUM PAGING_RN FROM" +  
-                " (" + strSQL + ") PAGING WHERE (ROWNUM <= " + intLimite + "))" +  
-                " WHERE (PAGING_RN >= " + intInicio + ")";  
-    }  
-}  
- *
- */
-						/*
-						Statement statement = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-						ResultSet rs = null;
-						String query = null;
-						if (pk_name != null && limit > 0) {
-							  query = "SELECT " + (dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*") + " FROM " + table + " WHERE " + pk_name + " IN (SELECT TOP " + limit + " "  + pk_name + " FROM (SELECT TOP " + offset + " " + pk_name + " FROM " + table + " ORDER BY " + pk_name + " ASC) AS table_1 ORDER BY recno DESC) ORDER BY " + pk_name + " ASC";
-							System.out.println("^^^ " + query);
-							rs = statement.executeQuery(query);
-							return rs;
-						}
-						else {
-							if (pk_name == null) {
-								JOptionPane.showMessageDialog(null, "<html>Não foi possível localizar a definição de chave primária para a tabela: <b>" + table + "</b> portanto os dados não poderão ser exportados de forma paginada.<br><font color=gray>***<i> Esta consulta pode demorar alguns minutos... seja paciente!</i></font></html>", "Aviso!", JOptionPane.OK_OPTION);
-							}
-							query = "SELECT " + (dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*") + " FROM " + table;
-							System.out.println("^^^ " + query);
-							rs = statement.executeQuery(query);
-							return rs; 							
-						}
-						*/
+						
 					}			
 					return null;
 				}
 				catch(Exception e) {
 					e.printStackTrace();
 				}
-				
-				
 				break;
-			case 3: // -- banco de origem = microsoft sql server -> banco destino = mysql | microsoft sql server | postgres
+				
+			case DB_MSSQL:
 				try {
 					Connection con = getConnection();
 					if (con != null && !con.isClosed()) {
 						Statement statement = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 						ResultSet rs = null;
-						String query = null;
+						String sql = null;
 						if (pk_name != null && limit > 0) {
-							  query = "SELECT " + (dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*") + " FROM " + table + " WHERE " + pk_name + " IN (SELECT TOP " + limit + " "  + pk_name + " FROM (SELECT TOP " + offset + " " + pk_name + " FROM " + table + " ORDER BY " + pk_name + " ASC) AS table_1 ORDER BY recno DESC) ORDER BY " + pk_name + " ASC";
-							System.out.println("^^^ " + query);
-							rs = statement.executeQuery(query);
+							sql = "SELECT " + (dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*") + " FROM " + table + " WHERE " + pk_name + " IN (SELECT TOP " + limit + " "  + pk_name + " FROM (SELECT TOP " + offset + " " + pk_name + " FROM " + table + " ORDER BY " + pk_name + " ASC) AS table_1 ORDER BY recno DESC) ORDER BY " + pk_name + " ASC";
+							rs = statement.executeQuery(sql);
 							return rs;
 						}
 						else {
 							if (pk_name == null) {
 								JOptionPane.showMessageDialog(null, "<html>Não foi possível localizar a definição de chave primária para a tabela: <b>" + table + "</b> portanto os dados não poderão ser exportados de forma paginada.<br><font color=gray>***<i> Esta consulta pode demorar alguns minutos... seja paciente!</i></font></html>", "Aviso!", JOptionPane.OK_OPTION);
 							}
-							query = "SELECT " + (dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*") + " FROM " + table;
-							System.out.println("^^^ " + query);
-							rs = statement.executeQuery(query);
+							sql = ("SELECT [fields] FROM [table]").replace("[fields]", dest_db == 3 ? fields.toString().replace(", #FOE#", "") : "*").replace("[table]", table);
+							rs = statement.executeQuery(sql);
 							return rs; 							
 						}
 					}					
@@ -1591,64 +1519,11 @@ public class FormatSQL {
 	}
 	
 	public String getDumpStructure(String table, int dest_db) {
-		
-		
-		
-		
-		
-		try {
-			
-			if (_connection != null && !_connection.isClosed()) {
-				ResultSet rs = null;
-				DatabaseMetaData db_metadata = _connection.getMetaData();
-				rs = db_metadata.getPrimaryKeys(null, null, table);
-				List<String> primary_keys = new ArrayList<String>();
-				while (rs.next()) {
-					primary_keys.add(rs.getString("COLUMN_NAME"));
-				}
-				rs.close();
-				rs = executeQuery("SELECT * FROM " + table + " WHERE 0=1");
-				ResultSetMetaData columnData = rs.getMetaData();
-				for (int i = 1; i <= columnData.getColumnCount(); i++) {
-					
-					switch (dest_db) {
-						case 0: // mysql
-							break;
-						case 1: // oracle
-							break;
-						case 2: // postgree
-							break; 
-						case 3: // sql server
-					}
-					
-					
-					switch(columnData.getColumnType(i)) {
-						default:
-							System.out.println("-->" + columnData.getColumnName(i) + " (" + columnData.getColumnTypeName(i) + "," + columnData.getColumnType(i) + ")");
-					}
-					//System.out.println("--> Nome: " + column_structure.getColumnName(i) + " @ Tipo: " + column_structure.getColumnType(i) + "(" + column_structure.getColumnTypeName(i) + ")" + " @ Escala: " + column_structure.getScale(i) + " @ Precisao: " + column_structure.getPrecision(i) + " | " + column_structure.getColumnTypeName(i) + " | isNull=" + column_structure.isNullable(i) + " | isAutoIncrement=" + column_structure.isAutoIncrement(i));
-				}
-				rs.close();
-			}
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		
-		
-		
-		
-		
-		
-		
 		String out = null;
 		ResultSet rs = null;
 		StringBuffer fields = new StringBuffer();
-		
-		//switch (dest_db) {
 		switch (getServerType()) {
-			case 0: // mysql
+			case DB_MYSQL: 
 				rs = this.executeQuery("SHOW CREATE TABLE " + table);
 				try {
 					if (rs.next()) {
@@ -1658,17 +1533,12 @@ public class FormatSQL {
 				}
 				catch (Exception e) { e.printStackTrace(); }
 				return out + ";\r\n";
-			
-			case 1: // oracle
-				System.out.println("-- oracle database show create table.");
 				
+			case DB_ORACLE:
 				StringBuffer create_sequence = new StringBuffer();				
-				
 				try {
 					List<String> pk_names  = new ArrayList<String>();
 					DatabaseMetaData meta_data = _connection.getMetaData();
-
-					// -- lista as chaves primarias da tabela.
 					rs = meta_data.getPrimaryKeys(null, null, table);
 					boolean pk_exists = false;
 					while (rs != null && rs.next()) {
@@ -1681,8 +1551,6 @@ public class FormatSQL {
 						}
 					}
 					rs.close();
-					
-					// -- lista as colunas e prepara a declaracao das chaves primarias no corpo da tabela.
 					rs = executeQuery("SELECT * FROM " + table + " WHERE 1=2");
 					ResultSetMetaData column_structure = rs.getMetaData();
 					for (int i = 1; i <= column_structure.getColumnCount(); i++) {
@@ -1741,11 +1609,9 @@ public class FormatSQL {
 				catch (Exception e) {
 					e.printStackTrace();
 				}
-				
 				return "CREATE TABLE " + table + " (\n" + fields.toString() + "\n);\r\n" + create_sequence.toString(); 
 				
-				
-			case 3: // sql server
+			case DB_MSSQL:
 				try {
 					boolean pk_found = false;
 					rs = executeQuery("SELECT * FROM " + table + " WHERE 1=0");
@@ -1805,16 +1671,14 @@ public class FormatSQL {
 						if ((i + 1) <= column_structure.getColumnCount()) {
 							fields.append(", \n");
 						}
-						System.out.println("==> colname: " + column_structure.getColumnName(i) + ", typename: " + column_structure.getColumnTypeName(i) + ", displaysize: " + column_structure.getScale(i) + ", precision: "  + column_structure.getPrecision(i));
 					}
-					
 				}
 				catch(Exception e) {
 					e.printStackTrace();
 				}
 				return "CREATE TABLE " + table + " (\n" + fields.toString() + "\n);\r\n"; 
 			
-			case 2: // postgree
+			case DB_POSTGREE:
 				//		  				  1                   2                         3                    4                       5                    6                 7                                 8                          9                                10                                                 
 				rs = executeQuery("SELECT columns.table_name, columns.ordinal_position, columns.column_name, columns.column_default, columns.is_nullable, columns.udt_name, columns.character_maximum_length, columns.numeric_precision, columns.numeric_precision_radix, columns.numeric_scale FROM information_schema.columns  WHERE columns.table_schema::text = 'public'::text AND columns.table_name='" + table + "' ORDER BY columns.table_name, columns.ordinal_position");
 				out = "CREATE TABLE IF NOT EXISTS " + table + " (";

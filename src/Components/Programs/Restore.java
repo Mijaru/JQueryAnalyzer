@@ -21,6 +21,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -53,12 +54,13 @@ public class Restore {
 	private JComboBox<String> _option_in_cs;
 	private SQLConnectionManager _CONNECTION;
 	private int _script_error;
-	private boolean _debug = true;
 	private JCheckBox _option_in_old;
+	private Logger _log;
 	/** -- CONVERTE O FORMATO DE ARQUIVO PubliSQL para SQL Server [Limpeza] -- */
 	
 	
 	public Restore() {
+		_log = MainWindow.getActiveLog();
 		Component active = MainWindow.getActiveTab();
 		if (active instanceof JQueryPane) {
 			JQueryPane pane = (JQueryPane)active;
@@ -96,14 +98,13 @@ public class Restore {
 					if (option == JOptionPane.YES_OPTION) {
 						_thread.stop();
 						_thread = null;
-						System.out.println("*** Restauração de backup abortada!");
+						if (_log != null) _log.warning("\t[«««] Tool: SQL backup restore, stopped by user.");
 					}
 					else {
 						return;
 					}
 				}
 				_DIALOG.dispose();
-				System.out.println("*** Restauração de backup finalizada pelo usuario!");
 			}
 			public void windowDeactivated(WindowEvent a) { }
 			public void windowDeiconified(WindowEvent a) { }
@@ -113,9 +114,8 @@ public class Restore {
 		});
 		JLabel text1 = new JLabel();
 		text1.setFont(new Font("Verdana",Font.PLAIN,12));
-		text1.setText("<html>Selecione o <font color=black><i>arquivo de origem</i></font>:</html>");
+		text1.setText("<html>Selecione o <b>arquivo de origem</b>:</html>");
 		text1.setBounds(10,5,475,20);
-		text1.setForeground(Color.DARK_GRAY);
 		text1.setOpaque(true);
 		_DIALOG.add(text1);
 		
@@ -142,9 +142,8 @@ public class Restore {
 		
 		JLabel text4 = new JLabel();
 		text4.setFont(new Font("Verdana",Font.PLAIN,12));
-		text4.setText("<html>Andamento da <font color=black><i>restauração do backup</i></font>:</html>");
+		text4.setText("<html>Progresso da <b>restauração do backup</b>:</html>");
 		text4.setBounds(10,60,475,20);
-		text4.setForeground(Color.DARK_GRAY);
 		text4.setOpaque(true);
 		_DIALOG.add(text4);
 		
@@ -154,7 +153,7 @@ public class Restore {
 		_DIALOG.add(_progress);	
 		
 		
-		_run = new JButton("<html><u>I</u>niciar Importação</html>");
+		_run = new JButton("<html>Iniciar Importação</html>");
 		_run.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
 		_run.setMnemonic(KeyEvent.VK_I);
 		_run.setBounds(255,174,150,40);
@@ -169,7 +168,7 @@ public class Restore {
 		});
 		_DIALOG.add(_run);
 			
-		_close = new JButton("<html><u>S</u>air</html>");
+		_close = new JButton("<html>Sair</html>");
 		_close.setMnemonic(KeyEvent.VK_S);
 		_close.setFont(new Font("Verdana",Font.ROMAN_BASELINE,12));
 		_close.setBounds(410,174,76,40);
@@ -182,8 +181,7 @@ public class Restore {
 		_DIALOG.add(_close);
 			
 		JLabel opcoes = new JLabel();
-		opcoes.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), " Codificação do arquivo de backup ", SwingConstants.CENTER, SwingConstants.CENTER, _default_font, Color.DARK_GRAY));
-		//opcoes.setBounds(10, 120, 235, 45);
+		opcoes.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "<html>&nbsp;<b>Codificação</b> do arquivo de backup:&nbsp;</html>", SwingConstants.CENTER, SwingConstants.CENTER, _default_font, Color.BLACK));
 		opcoes.setBounds(10, 120, 478, 49);
 		_DIALOG.add(opcoes);
 		
@@ -199,14 +197,14 @@ public class Restore {
 		_option_in_cs.setSelectedItem("UTF-8");
 		opcoes.add(_option_in_cs);
 		
-		_option_in_old = new JCheckBox("Compatibilidade de versões antigas do MySQL.");
+		_option_in_old = new JCheckBox("Compatibilidade de versões antigas do MySQL");
 		_option_in_old.setBounds(170,18,300,24);
 		_option_in_old.setFont(new Font("Verdana",Font.ROMAN_BASELINE,11));
 		opcoes.add(_option_in_old);
 		
 	}
 
-	public void start() {
+	public void startPrograma() {
 		if (_DIALOG != null) {
 			_DIALOG.setVisible(true);
 		}
@@ -228,7 +226,6 @@ public class Restore {
 			_file = path;
 		}
 
-		@SuppressWarnings("resource")
 		public void run() {
 			FileInputStream fout = null;  
 			FileChannel file_channel = null;
@@ -258,13 +255,13 @@ public class Restore {
 				StringBuilder sb = null;
 				
 				char pos = 0, cur = 0, flag = 0x00, escape = 0x00, comment = 0x00;
-				float progress = 0F, packet = 0F;
+				float progress = 0F;
 				Exception exception = null;
 				
 				long time = System.currentTimeMillis();
-				if (_debug) {
-					System.out.println("<- src.Components.Programs.Restore$processBackup.run() ->> Iniciando restauração de backup do Publi, charset:  [" + charset.name() + "]");
-				}
+				
+				if (_log != null) _log.warning("\t[»»»] Tool: { Backup Restore }\tBegin:\t'" + _file + "'");
+
 				for (long i = 0; i < size; i++) {
 					buffer.clear();
 					length = file_channel.read(buffer, i);
@@ -312,9 +309,7 @@ public class Restore {
 												if (version_b.startsWith("MY") && Integer.parseInt(version_b.substring(2)) <=  Integer.parseInt(version_a.substring(0, 1))) {
 													data = data.substring(data.indexOf(" "), data.indexOf(";") - 2).trim();
 													if (!data.toLowerCase().startsWith("use")) {
-														if (_debug) {
-															System.out.println(">> { " + data + " } -> [ " + version_a + " > " + version_b + " ]");
-														}
+														if (_log != null) _log.info("\t[***] Tool: { Backup Restore }\tQuery:\t'" +  data + " -> [ " + version_a + " > " + version_b + " ]" + "'");
 														text = "<html><i>" + Util.toPercent(progress) + "</i> concluido! Aguardando ação na tabela: { <font color='blue'><b>" + table + "</b></font> }</html>";
 														_progress.updateProgress(text, progress, 0f);
 														exception = _CONNECTION.executeUpdate(data);
@@ -324,9 +319,7 @@ public class Restore {
 											}
 											break;
 										default:
-											if (_debug && data != null) {
-												System.out.println(comment + "" + comment + " Comment! { " + data + " }");
-											}		
+											if (_log != null) _log.info("\t[***] Tool: { Backup Restore }\tComment:\t'" +  data + "'");
 									}
 									
 									
@@ -361,9 +354,7 @@ public class Restore {
 							case 0x0A: // [ \n ] - encerramento de comentário de linha simples.
 								if (flag == 0x00 && (comment == '-' || comment == '/' || comment == '#')) {
 									loc_b = j;
-									if (_debug) {
-										System.out.println(comment + "" + comment + " Comment! { " + sb.substring(loc_a, loc_b).trim() + " }");
-									}
+									if (_log != null) _log.info("\t[***] Tool: { Backup Restore }\tComment:\t'" + sb.substring(loc_a, loc_b).trim() + "'");
 									processed += loc_b - loc_a;
 									sb.delete(loc_a, loc_b);
 									j = loc_a;
@@ -413,14 +404,12 @@ public class Restore {
 								if (flag == 0x00 && escape == 0x00 && comment == 0x00) {
 									processed += j + 1;
 									progress = ((processed * 100F) / size);
-									packet = (1f + j) / (1024f * 1024);
 																
 									data = sb.substring(0, j).trim();
 									length = data.length();
 									alias = data.substring(0, length > 128 ? 128 : length).toLowerCase();
-									if (_debug) {
-										System.out.println(">> { " + data.substring(0, length > 56 ? 56 : length) + (length > 56 ? "..." : "") + " } " + Util.toPercent(packet).replace("%", "MB") + " -=> " + Util.toPercent(progress));
-									}
+									
+									if (_log != null) _log.info("\t[***] Tool: { Backup Restore }\tQuery:\t'" + data.substring(0, length > 56 ? 56 : length) + (length > 56 ? "..." : "") + "'");
 									
 									if (alias.startsWith("create table")) {
 										++tables;
@@ -436,13 +425,6 @@ public class Restore {
 									if (!alias.startsWith("use")) {
 										text = "<html><i>" + Util.toPercent(progress) + "</i> concluido! Processados: <b>" + tables + "</b> tabelas / <b>" + rows + "</b> blocos. { <font color='blue'>" + table + "</font> }.</html>";
 										_progress.updateProgress(text, progress, 0f);
-										/*
-										if (_paint_time + (40000000) <= System.nanoTime() || progress == 100) {
-											_progress.setText();
-											_progress.setMainProgress(progress);
-											_paint_time = System.nanoTime();
-										}
-										*/
 										exception = _CONNECTION.executeUpdate(data);
 									}
 									++j;
@@ -455,20 +437,23 @@ public class Restore {
 							++_script_error;
 							Clipboard teclado = Toolkit.getDefaultToolkit().getSystemClipboard();  
 							StringSelection selecao = new StringSelection(data); 
-							teclado.setContents(selecao, null);  
-							System.out.println("<- src.Components.Programs.Restore.processBackup$run() ->> Falha: " + exception.getMessage()+"\nO comando SQL foi copiado para o clipboard!");
+							teclado.setContents(selecao, null);
+							
+							if (_log != null) _log.severe("\t[***] Tool: { Backup Restore }\tError:\t'" + exception.getMessage() + "'");
+							
 							if (JOptionPane.showConfirmDialog(null, "<html>Erro detectado:<br><b>" + exception.getMessage() + "</b><br><br>Deseja seguir com a restauração?</html>", "JQueryAnalizer - Erro ao restaurar backup", JOptionPane.YES_OPTION) == JOptionPane.NO_OPTION) {
 								_DIALOG.dispose();
 								_DIALOG = null;
+								toogleActions(true);
+								file_channel.close();
+								fout.close();
 								return;
 							}
 							exception = null;
 						}
 					}
 				}
-				if (_debug) {
-					System.out.println("-> Fim da restauracao! Tempo decorrido: " + ((System.currentTimeMillis() - time) / (1000 * 60)) + " minutos");
-				}
+				if (_log != null) _log.warning("\t[«««] Tool: { Backup Restore }\tEnd\tEnlapsed time: " + ((System.currentTimeMillis() - time) / (1000 * 60)) + " min");
 
 				if (_script_error > 0) {
 					JOptionPane.showMessageDialog(_DIALOG, "<html>Ocorreram <font color=red>" + _script_error + "</font> erros durante a restauração do arquivo,<br>observe o log de erros para verificar os problemas ocorridos.<br><br><i>Esta restauração pode conter dados parciais, portanto não é confiável!</i></html>", "JQueryAnalizer - Restauração finalizada com erros.", JOptionPane.OK_OPTION);
@@ -483,13 +468,15 @@ public class Restore {
 			catch (Exception e) {
 				e.printStackTrace();
 				toogleActions(true);
+			}
+			finally {
 				try {
 					file_channel.close();
 					fout.close();
 				} 
 				catch (IOException e1) {
 					e1.printStackTrace();
-				}
+				}				
 			}
 		}
 		

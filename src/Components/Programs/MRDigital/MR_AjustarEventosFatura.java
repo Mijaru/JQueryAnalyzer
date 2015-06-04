@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -43,6 +44,8 @@ import org.jdom2.output.XMLOutputter;
 
 
 
+
+
 import Components.MainWindow;
 import Components.SQLConnectionManager;
 import Components.MainWindowComponents.JQDialog;
@@ -55,6 +58,7 @@ public class MR_AjustarEventosFatura {
 	private Thread _ACTIVE_THREAD;
 	private String _backup, _source, SQL = "";
 	private List<String> _SUPPORT_NAMESPACES = new ArrayList<String>();
+	private Logger _log;
 	
 	/** -CONSTRUTOR- */
 	public MR_AjustarEventosFatura(SQLConnectionManager connection) {
@@ -64,6 +68,8 @@ public class MR_AjustarEventosFatura {
 	}
 
 	public void startProgram() {
+		_log = MainWindow.getActiveLog();
+		
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
 		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Ajustar eventos do faturamento");
@@ -75,11 +81,11 @@ public class MR_AjustarEventosFatura {
 		_FRAME.getGlassPane().setBackground(new Color(180, 191, 222));
 		_FRAME.setResizable(false);
 		_FRAME.getContentPane().setLayout(null);
+		_FRAME.setIconImages(MainWindow.getMainIconList());
 		_FRAME.addWindowListener(new WindowListener(){
 			public void windowActivated(WindowEvent event) { }
 			public void windowClosed(WindowEvent event) { }
 			public void windowClosing(WindowEvent event) {
-				System.out.println("Encerrando a normalização por requisição do usuário");
 				_FRAME.dispose();
 			}
 			public void windowDeactivated(WindowEvent event) { }
@@ -168,6 +174,10 @@ public class MR_AjustarEventosFatura {
 	private class Execute implements Runnable {
 		public void run() {
 			try {
+				long time = System.currentTimeMillis();
+				
+				if (_log != null) _log.warning("\t[»»»] Tool: { Adjust fields FAT__E }\tBEGIN:\t'" + _source + "'");
+				
 				ResultSet rs = _CONNECTION.executeQuery("SELECT enviado, retorno, SUBSTRING(idfat, 3, 7), recno FROM " + _source + " WHERE tr IN ('EN', 'DI') AND sistema='NFE'");// AND LENGTH(enviado)>(64*1024)");
 				String xml_e = null;
 				@SuppressWarnings("unused")
@@ -205,11 +215,13 @@ public class MR_AjustarEventosFatura {
 					if (!_SUPPORT_NAMESPACES.contains(root.getNamespaceURI())) {
 						_LOG.append("         » Estrutura do XML não suportada! (Namespace URI: " + root.getNamespaceURI() + ")\n");
 						_LOG.setCaretPosition(_LOG.getText().length());
+						if (_log != null) _log.info("\t[***] Tool: { Adjust fields FAT__E }\tCheck register:\t'" + idfat + " / " + recno + "' Namespace (não suportado): " + root.getNamespaceURI());
 						continue;
 					}
 					else {
 						_LOG.append("         » XML namespace: '" + root.getNamespaceURI() + "'\n");
 						_LOG.setCaretPosition(_LOG.getText().length());
+						if (_log != null) _log.info("\t[***] Tool: { Adjust fields FAT__E }\tCheck register:\t'" + idfat + " / " + recno + "' Namespace: " + root.getNamespaceURI());
 					}
 					
 					list    = root.getChildren();
@@ -247,21 +259,30 @@ public class MR_AjustarEventosFatura {
 						st.setString(1, sb.toString());
 						st.setInt(2, recno);
 						SQL += st.toString().substring(st.toString().indexOf( ": ") + 2) + ";\r\n";
-						if (!st.execute() && st.getUpdateCount() >= 1) {
-							_LOG.append("                  » Ajuste realizado com sucesso!\n");
+						if (xml_e.length() >= 32 * 1024) {
+							if (!st.execute()) {
+								_LOG.append("                  » Ajuste realizado com sucesso!\n");
+								if (_log != null) _log.info("\t[***] Tool: { Adjust fields FAT__E }\tAdjust register:\t RPS:" + idfat + ", XML size: " + (sb.length() / 1024) + "kb");
+							}
+							else {
+								_LOG.append("                  » Ocorreu algum erro ao realizar o ajuste!\n");
+								if (_log != null) _log.info("\t[***] Tool: { Adjust fields FAT__E }\tAdjust register failure. Exception: '" + st.getWarnings() + "' / Query: '" + sb.toString() + "'");
+							}
 						}
 						else {
-							_LOG.append("                  » Ocorreu algum erro ao realizar o ajuste!\n");
+							if (_log != null) _log.info("\t[***] Tool: { Adjust fields FAT__E }\tNo need adjust. Data length: " + (xml_e.length() / 1024) + "kb");
 						}
 						_LOG.setCaretPosition(_LOG.getText().length());
 						
 					}
 					else {
 						_LOG.append("                  » Não foi localizado conteudo para ajuste neste registro.\n");
+						if (_log != null) _log.info("\t[***] Tool: { Adjust fields FAT__E }\tNo field to adjust.");
 					}
 
 				}
 				_LOG.append("» Concluído!\n");
+				if (_log != null) _log.warning("\t[«««] Tool: { Adjust fields FAT__E }\tEND\tEnlapsed time: " + ((System.currentTimeMillis() - time) / (1000 * 60)) + " min");
 			}
 			catch (Exception e) {
 				e.printStackTrace();

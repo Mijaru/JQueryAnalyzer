@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -13,6 +14,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -29,12 +31,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.JTree;
+import javax.swing.border.AbstractBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
-
-import javolution.util.FastList;
 
 import Components.MainWindow;
 import Components.SQLConnectionManager;
@@ -51,7 +52,7 @@ public class Repair {
 	private JTree _list;
 	private JButton _run;
 	private JButton _close;
-	private FastList<String> _TABLE_LIST = new FastList<String>();
+	private List<String> _TABLE_LIST = new ArrayList<String>();
 	private int _TABLE_LIST_SIZE;
 	private int _TABLE_LIST_ERROR;
 	private String _SELECTED_DATABASE;
@@ -88,7 +89,7 @@ public class Repair {
 		uncheck.setImage(uncheck.getImage().getScaledInstance(24, 24, 100));
 
 		_DIALOG = new JFrame();
-		_DIALOG.setTitle("JQueryAnalizer - Reparação e otimização de tabelas [MySQL]");
+		_DIALOG.setTitle("JQuery Analizer - Reparação e otimização de tabelas [MySQL]");
 		_DIALOG.setMaximumSize(new Dimension(500,550));
 		_DIALOG.setMinimumSize(new Dimension(500,550));
 		_DIALOG.setPreferredSize(new Dimension(500,550));
@@ -96,7 +97,7 @@ public class Repair {
 		_DIALOG.setResizable(false);
 		_DIALOG.setLayout(null);
 		_DIALOG.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		_DIALOG.setIconImage(new ImageIcon(ClassLoader.getSystemResource("data_hammer.png")).getImage());
+		_DIALOG.setIconImages(MainWindow.getMainIconList());
 
 		JLabel text2 = new JLabel("<html>Selecione a <b>database</b>:</html>");
 		text2.setFont(_default_font);
@@ -109,32 +110,27 @@ public class Repair {
 		_database.setOpaque(true);
 		_database.setBorder(null);
 		_database.setCellRenderer(new DatabaseTreeCellRender(null, null));
-		_database.setRowHeight(18);
+		_database.setRowHeight(22);
 		JScrollPane scrolls_1 = new JScrollPane(_database);
 		scrolls_1.setBounds(10,25,215,274);
 		scrolls_1.setAutoscrolls(true);
 		_DIALOG.add(scrolls_1);
 		_database.addKeyListener(new KeyListener(){
-			@Override
 			public void keyPressed(KeyEvent event) {
 				if (event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') {
 					Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
 					t.start(); 
 				}
 			}
-			@Override
 			public void keyReleased(KeyEvent event) { }
-			@Override
 			public void keyTyped(KeyEvent event) { }
 		});
 		_database.addMouseListener(new MouseListener(){
-			@Override
 			public void mouseClicked(MouseEvent event) {
 				if (event.getButton() > 1) {
 					JPopupMenu menu = new JPopupMenu();
 					JMenuItem item1 = new JMenuItem("Selecionar este banco");
 					item1.addActionListener(new ActionListener() {
-						@Override
 						public void actionPerformed(ActionEvent event) {
 							Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
 							t.start();
@@ -143,7 +139,6 @@ public class Repair {
 					menu.add(item1);
 					JMenuItem item2 = new JMenuItem("Atualizar lista");
 					item2.addActionListener(new ActionListener() {
-						@Override
 						public void actionPerformed(ActionEvent event) { 
 							Thread t = new Thread(new DatabaseList());
 							t.start();
@@ -153,11 +148,8 @@ public class Repair {
 					menu.show(_database, event.getX(), event.getY());
 				}
 			}
-			@Override
 			public void mouseEntered(MouseEvent event) { }
-			@Override
 			public void mouseExited(MouseEvent event) { }
-			@Override
 			public void mousePressed(MouseEvent event) { 
 				if (event.getClickCount() >= 2) {
 					String database = (_database.getSelectionPath() != null ? _database.getSelectionPath().toString() : "");
@@ -165,10 +157,16 @@ public class Repair {
 					t.start();
 				} 
 			}
-			@Override
 			public void mouseReleased(MouseEvent event) { }				
 		});
+		_database.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
 
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
+		
 		JLabel text3 = new JLabel("<html>Selecione as <b>tabelas</b> a serem reparadas:</html>");
 		text3.setFont(_default_font);
 		text3.setForeground(Color.DARK_GRAY);
@@ -176,33 +174,33 @@ public class Repair {
 		_DIALOG.add(text3);
 		
 		_list = new JTree(new DefaultMutableTreeNode("Aguarde!"));
-		_list.getRootPane();
+		_list.setRowHeight(22);
 		_list.setCellRenderer(new TableTreeCellRender());
 		_list.setOpaque(true);
 		_list.addKeyListener(new KeyListener() {
-			@Override
 			public void keyPressed(KeyEvent event) {
 				if ((event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') && event.getComponent() != null && event.getComponent() instanceof JTree) { selectTable(); }
 			}
-			@Override
 			public void keyReleased(KeyEvent a) { }
-			@Override
 			public void keyTyped(KeyEvent a) { }
 		});
 		_list.addMouseListener(new MouseListener() {
-			@Override
 			public void mouseClicked(MouseEvent event) { }
-			@Override
 			public void mouseEntered(MouseEvent event) { }
-			@Override
 			public void mouseExited(MouseEvent event) { }
-			@Override
 			public void mousePressed(MouseEvent event) { 
 				if (event.getClickCount() >= 2) { selectTable(); } 
 			}
-			@Override
 			public void mouseReleased(MouseEvent event) { }
 		});
+		_list.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
+
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
+		
 		JScrollPane scrolls = new JScrollPane(_list);
 		scrolls.setBounds(230,25,255,274);
 		scrolls.setAutoscrolls(true);
@@ -211,19 +209,11 @@ public class Repair {
 		// programas de reparação
 		JLabel text6 = new JLabel();
 		text6.setFont(_default_font);
-		text6.setForeground(Color.DARK_GRAY);
 		text6.setBounds(10,305,475,50);
 		text6.setOpaque(true);
-		text6.setBorder(BorderFactory.createTitledBorder(new LineBorder(new Color(190,190,190), 1, true), " ", 1, 0, new Font("Verdana", Font.ROMAN_BASELINE, 11), Color.DARK_GRAY));
+		text6.setBorder(BorderFactory.createTitledBorder(new LineBorder(new Color(190,190,190), 1, true), "<html>&nbsp;Opções de <b>reparação/otimização</b> das tabelas selecionadas:&nbsp;</html>", 1, 0, new Font("Verdana", Font.ROMAN_BASELINE, 11), Color.BLACK));
 		_DIALOG.add(text6);
-		
-		JLabel text7 = new JLabel("<html>Opções de <b>reparação/otimização</b> das tabelas selecionadas:</html>");
-		text7.setFont(_default_font);
-		text7.setForeground(Color.DARK_GRAY);
-		text7.setBounds(8,0,390,15);
-		text7.setHorizontalAlignment(JLabel.CENTER);
-		text7.setOpaque(true);
-		text6.add(text7);
+
 		_repair = new JCheckBox("REPAIR");
 		_repair.setFont(_default_font);
 		_repair.setForeground(Color.BLACK);
@@ -243,7 +233,6 @@ public class Repair {
 		_primary.setFocusable(false);
 		_primary.setSelected(true);
 		_primary.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				_primary_name.setEnabled(_primary != null && _primary.isSelected());
 				_primary_type.setEnabled(_primary != null && _primary.isSelected());
@@ -261,6 +250,11 @@ public class Repair {
 		_innodb.setSelectedIcon(check);
 		_innodb.setFocusable(false);
 		_innodb.setSelected(true);
+		_innodb.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent event) {
+				_engine.setEnabled(_innodb.isSelected());
+			}
+		});
 		text6.add(_innodb);
 		
 		
@@ -279,6 +273,7 @@ public class Repair {
 				}
 			}
 		});
+		_engine.setSelectedItem("InnoDB");
 		text6.add(_engine);
 		
 		_optmize = new JCheckBox("OPTMIZE");
@@ -294,23 +289,13 @@ public class Repair {
 		// chave primária
 		JLabel text1 = new JLabel();
 		text1.setFont(_default_font);
-		text1.setForeground(Color.DARK_GRAY);
 		text1.setBounds(10,360,475,50);
 		text1.setOpaque(true);
-		text1.setBorder(BorderFactory.createTitledBorder(new LineBorder(new Color(190,190,190), 1, true), " ", 1, 0, new Font("Verdana", Font.ROMAN_BASELINE, 11), Color.DARK_GRAY));
+		text1.setBorder(BorderFactory.createTitledBorder(new LineBorder(new Color(190,190,190), 1, true), "<html>&nbsp;Campo definido como <b>chave primária</b> das tabelas selecionadas:&nbsp;</html>", 1, 0, new Font("Verdana", Font.ROMAN_BASELINE, 11), Color.BLACK));
 		_DIALOG.add(text1);
-		
-		JLabel text4 = new JLabel("<html>Campo definido como <b>chave primária</b> das tabelas selecionadas:</html>");
-		text4.setFont(_default_font);
-		text4.setForeground(Color.DARK_GRAY);
-		text4.setBounds(8,0,390,15);
-		text4.setHorizontalAlignment(JLabel.CENTER);
-		text4.setOpaque(true);
-		text1.add(text4);
 		
 		_primary_name = new JTextField("ID");
 		_primary_name.setFont(_default_font);
-		_primary_name.setForeground(Color.BLACK);
 		_primary_name.setBounds(10,18,90,21);
 		text1.add(_primary_name);
 			
@@ -341,7 +326,6 @@ public class Repair {
 		
 		_text4 = new JLabel("<html><b>Progresso</b> da reparação das tabelas:</html>");
 		_text4.setFont(_default_font);
-		_text4.setForeground(Color.DARK_GRAY);
 		_text4.setBounds(10,414,475,20);
 		_text4.setOpaque(true);
 		_DIALOG.add(_text4);
@@ -354,7 +338,7 @@ public class Repair {
 		
 			
 		
-		_run = new JButton("<html><u>I</u>niciar Reparação</html>");
+		_run = new JButton("<html>Iniciar Reparação</html>");
 		_run.setFont(_default_font);
 		_run.addActionListener(new ActionListener(){
 
@@ -363,7 +347,7 @@ public class Repair {
 				toogleActions(false);
 				TreeModel model = _list.getModel();
 				int option;
-				_TABLE_LIST = new FastList<String>(); 
+				_TABLE_LIST = new ArrayList<String>(); 
 				for (int i = 0; i < model.getChildCount(model.getRoot()); i++) {
 					if (model.getChild(model.getRoot(), i) instanceof DefaultMutableTreeNode) {
 						DefaultMutableTreeNode node = (DefaultMutableTreeNode)model.getChild(model.getRoot(), i);
@@ -390,7 +374,7 @@ public class Repair {
 		_run.setBounds(255,477,150,37);
 		_DIALOG.add(_run);
 		
-		_close = new JButton("<html><u>S</u>air</html>");
+		_close = new JButton("<html>Sair</html>");
 		_close.setMnemonic(KeyEvent.VK_S);
 		_close.setFont(_default_font);
 		_close.setBounds(410,477,75,37);
@@ -412,12 +396,9 @@ public class Repair {
 		t.start();
 		
 		_DIALOG.addWindowListener(new WindowListener() {
-			@Override
 			public void windowActivated(WindowEvent a) { }
-			@Override
 			public void windowClosed(WindowEvent a) { }
 			@SuppressWarnings("deprecation")
-			@Override
 			public void windowClosing(WindowEvent arg0) {
 				if (_thread != null && _thread.isAlive()) {
 						int option = JOptionPane.showConfirmDialog(_DIALOG, "Existe uma reparação de tabelas em execução, tem certeza que deseja interromper esta reparação neste momento?", "JQueryAnalizer - Confirmação", JOptionPane.YES_OPTION);
@@ -434,13 +415,9 @@ public class Repair {
 					_DIALOG.dispose();
 					_DIALOG = null;
 				}
-				@Override
 				public void windowDeactivated(WindowEvent a) { }
-				@Override
 				public void windowDeiconified(WindowEvent a) { }
-				@Override
 				public void windowIconified(WindowEvent a) { }
-				@Override
 				public void windowOpened(WindowEvent a) { }
 		});
 	}
@@ -466,8 +443,6 @@ public class Repair {
 			}
 			catch (Exception e) { }
 			location = (server != null ? server : "") + (host != null ? host : "") + "/<u>"+path[2]+"</u>";
-			//_progress.setText("<html><font color='blue'>Aguardando conexão com o servidor <b>"+location+"</b></font></html>");
-			//_progress.setItemProgress(100.f);
 		}
 		public void run() {
 			if (path == null) {
@@ -583,7 +558,6 @@ public class Repair {
 			_SELECTED_DATABASE = null;
 			_SELECTED_HOST = null;
 		}
-		@Override
 		public void run() {
 			_DATABASE_COUNT = 0;			
 			JTabbedPane tabs = MainWindow.getTabs();
@@ -677,7 +651,6 @@ public class Repair {
 			_TABLE = table;
 		}
 		@SuppressWarnings("unused")
-		@Override
 		public void run() {
 			try {
 				ResultSet rs = null;

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
@@ -16,7 +17,9 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -31,12 +34,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTree;
+import javax.swing.border.AbstractBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
-
-import javolution.util.FastList;
 
 import Components.MainWindow;
 import Components.SQLConnectionManager;
@@ -51,7 +53,7 @@ public class Console {
 	private JTree _list;
 	private JButton _run;
 	private JButton _close;
-	private FastList<String> _TABLE_LIST = new FastList<String>();
+	private List<String> _TABLE_LIST = new ArrayList<String>();
 	private int _TABLE_LIST_SIZE;
 	private String _SELECTED_DATABASE;
 	private String _SELECTED_HOST;
@@ -65,8 +67,8 @@ public class Console {
 	private	ImageIcon check;
 	private ImageIcon uncheck;
 
-	FastList<String> _command_regular = new FastList<String>();
-	FastList<String> _command_blocked = new FastList<String>();
+	private List<String> _command_regular = new ArrayList<String>();
+	private List<String> _command_blocked = new ArrayList<String>();
 	
 	private JLabel _text4;
 	private ImageIcon check_16;
@@ -85,8 +87,8 @@ public class Console {
 		uncheck.setImage(uncheck.getImage().getScaledInstance(24, 24, 100));
 
 		_DIALOG = new JFrame();
-		_DIALOG.setTitle("JQueryAnalizer - Console para comandos blocados por tabela [multiservidor sql server e mysql].");
-		Dimension size = new Dimension(500,580);
+		_DIALOG.setTitle("JQuery Analizer - Console para comandos blocados por tabela.");
+		Dimension size = new Dimension(500,578);
 		_DIALOG.setMaximumSize(size);
 		_DIALOG.setMinimumSize(size);
 		_DIALOG.setPreferredSize(size);
@@ -94,12 +96,12 @@ public class Console {
 		_DIALOG.setResizable(false);
 		_DIALOG.setLayout(null);
 		_DIALOG.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		_DIALOG.setIconImage(new ImageIcon(ClassLoader.getSystemResource("folder_terminal.png")).getImage());
-
+		
+		_DIALOG.setIconImages(MainWindow.getMainIconList());
+		
 		// database de origem <-
 		JLabel text2 = new JLabel("<html>Selecione a <b>database</b>:</html>");
 		text2.setFont(_default_font);
-		text2.setForeground(Color.DARK_GRAY);
 		text2.setBounds(10,5,475,20);
 		_DIALOG.add(text2);
 		
@@ -108,32 +110,27 @@ public class Console {
 		_database.setOpaque(true);
 		_database.setBorder(null);
 		_database.setCellRenderer(new DatabaseTreeCellRender(_SELECTED_DATABASE, _SELECTED_HOST));
-		_database.setRowHeight(18);
+		_database.setRowHeight(22);
 		JScrollPane scrolls_1 = new JScrollPane(_database);
 		scrolls_1.setBounds(10,25,215,240);
 		scrolls_1.setAutoscrolls(true);
 		_DIALOG.add(scrolls_1);
 		_database.addKeyListener(new KeyListener(){
-			@Override
 			public void keyPressed(KeyEvent event) {
 				if (event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') {
 					Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
 					t.start(); 
 				}
 			}
-			@Override
 			public void keyReleased(KeyEvent event) { }
-			@Override
 			public void keyTyped(KeyEvent event) { }
 		});
 		_database.addMouseListener(new MouseListener(){
-			@Override
 			public void mouseClicked(MouseEvent event) {
 				if (event.getButton() > 1) {
 					JPopupMenu menu = new JPopupMenu();
 					JMenuItem item1 = new JMenuItem("Selecionar este banco");
 					item1.addActionListener(new ActionListener() {
-						@Override
 						public void actionPerformed(ActionEvent event) {
 							Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
 							t.start();
@@ -142,7 +139,6 @@ public class Console {
 					menu.add(item1);
 					JMenuItem item2 = new JMenuItem("Atualizar lista");
 					item2.addActionListener(new ActionListener() {
-						@Override
 						public void actionPerformed(ActionEvent event) { 
 							Thread t = new Thread(new DatabaseList());
 							t.start();
@@ -152,57 +148,60 @@ public class Console {
 					menu.show(_database, event.getX(), event.getY());
 				}
 			}
-			@Override
 			public void mouseEntered(MouseEvent event) { }
-			@Override
 			public void mouseExited(MouseEvent event) { }
-			@Override
 			public void mousePressed(MouseEvent event) { 
 				if (event.getClickCount() >= 2) {
 					Thread t = new Thread(new selectDatabase(_database.getSelectionPath().toString()));
 					t.start();
 				} 
 			}
-			@Override
 			public void mouseReleased(MouseEvent event) { }				
 		});
+		_database.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
 
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
+		
 		// tabelas da database a serem salvas <-
 		JLabel text3 = new JLabel("<html>Selecione as <b>tabelas</b> para ser alteradas:</html>");
 		text3.setFont(_default_font);
-		text3.setForeground(Color.DARK_GRAY);
 		text3.setBounds(230,5,475,20);
 		_DIALOG.add(text3);
 		
 		_list = new JTree(new DefaultMutableTreeNode("Aguarde!"));
-		_list.getRootPane();
+		_list.setRowHeight(22);
 		_list.setCellRenderer(new TableTreeCellRender());
 		_list.setOpaque(true);
 		
 		_list.addKeyListener(new KeyListener() {
-			@Override
 			public void keyPressed(KeyEvent event) {
 				if ((event.getKeyCode() == 32 || event.getKeyCode() == 10 || event.getKeyChar() == '+' || event.getKeyChar() == '-') && event.getComponent() != null && event.getComponent() instanceof JTree) { selectTable(); }
 			}
-			@Override
 			public void keyReleased(KeyEvent a) { }
-			@Override
 			public void keyTyped(KeyEvent a) { }
 		});
 		_list.addMouseListener(new MouseListener() {
-			@Override
 			public void mouseClicked(MouseEvent event) { }
-			@Override
 			public void mouseEntered(MouseEvent event) { }
-			@Override
 			public void mouseExited(MouseEvent event) { }
-			@Override
 			public void mousePressed(MouseEvent event) { 
 				if (event.getClickCount() >= 2) { selectTable(); } 
 			}
-			@Override
 			public void mouseReleased(MouseEvent event) { }
 		});
+		_list.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
+
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
+
+		
 		JScrollPane scrolls = new JScrollPane(_list);
 		scrolls.setBounds(230,25,255,240);
 		scrolls.setAutoscrolls(true);
@@ -214,7 +213,7 @@ public class Console {
 		text6.setForeground(Color.DARK_GRAY);
 		text6.setBounds(10,271,477,167);
 		text6.setOpaque(true);
-		text6.setBorder(BorderFactory.createTitledBorder(new LineBorder(new Color(190,190,190), 1, true), " Comandos/Scripts SQL: ", 1, 0, new Font("Verdana", Font.ROMAN_BASELINE, 11), Color.DARK_GRAY));
+		text6.setBorder(BorderFactory.createTitledBorder(new LineBorder(new Color(190,190,190), 1, true), "<html>&nbsp;<b>Scripts</b> SQL:&nbsp;</html>", 1, 0, new Font("Verdana", Font.ROMAN_BASELINE, 11), Color.BLACK));
 		_DIALOG.add(text6);
 		
 		_editor = new JTextArea("-- ATENÇÃO!\n\r// a. Todos os comandos devem ser encerrados com ';'\n\r// b. Para executar um comando em várias tabelas\n\r//    substitua o nome da tabela por '#table#' sem as aspas.\n\r// c. Comentários suportados: '--', '//', e '/* ... */'\n\roptimize table #table#;");
@@ -228,29 +227,26 @@ public class Console {
 		
 		_text4 = new JLabel("<html><b>Progresso</b> da execução dos comandos:</html>");
 		_text4.setFont(_default_font);
-		_text4.setForeground(Color.DARK_GRAY);
 		_text4.setBounds(10,440,475,20);
 		_text4.setOpaque(true);
 		_DIALOG.add(_text4);
 		
 		_progress = new JProgressLabel();
 		_progress.setPanelBounds(10,460,475,35);
-		_progress.setText("Selecione a database");
+		_progress.setText("Selecione a DATABASE");
 		_DIALOG.add(_progress);	
 		
 		
 			
 		
-		_run = new JButton("<html><u>E</u>xecutar Comandos</html>");
+		_run = new JButton("<html>Executar Comandos</html>");
 		_run.setFont(_default_font);
 		_run.addActionListener(new ActionListener(){
-
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				toogleActions(false);
 				TreeModel model = _list.getModel();
 				int option;
-				_TABLE_LIST = new FastList<String>(); 
+				_TABLE_LIST = new ArrayList<String>(); 
 				for (int i = 0; i < model.getChildCount(model.getRoot()); i++) {
 					if (model.getChild(model.getRoot(), i) instanceof DefaultMutableTreeNode) {
 						DefaultMutableTreeNode node = (DefaultMutableTreeNode)model.getChild(model.getRoot(), i);
@@ -275,16 +271,15 @@ public class Console {
 			}			
 		});
 		_run.setMnemonic(KeyEvent.VK_E);
-		_run.setBounds(255,505,150,37);
+		_run.setBounds(256,505,150,35);
 		_run.setEnabled(false);
 		_DIALOG.add(_run);
 		
-		_close = new JButton("<html><u>S</u>air</html>");
+		_close = new JButton("<html>Sair</html>");
 		_close.setMnemonic(KeyEvent.VK_S);
 		_close.setFont(_default_font);
-		_close.setBounds(410,505,75,37);
+		_close.setBounds(411,505,75,35);
 		_close.addActionListener(new ActionListener(){
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				for (WindowListener listener : _DIALOG.getWindowListeners()) {
 					if (listener == null) { continue; }
@@ -301,12 +296,9 @@ public class Console {
 		t.start();
 		
 		_DIALOG.addWindowListener(new WindowListener() {
-			@Override
 			public void windowActivated(WindowEvent a) { }
-			@Override
 			public void windowClosed(WindowEvent a) { }
 			@SuppressWarnings("deprecation")
-			@Override
 			public void windowClosing(WindowEvent arg0) {
 				if (_thread != null && _thread.isAlive()) {
 						int option = JOptionPane.showConfirmDialog(_DIALOG, "Existe uma reparação de tabelas em execução, tem certeza que deseja interromper esta reparação neste momento?", "JQueryAnalizer - Confirmação", JOptionPane.YES_OPTION);
@@ -323,13 +315,9 @@ public class Console {
 					_DIALOG.dispose();
 					_DIALOG = null;
 				}
-				@Override
 				public void windowDeactivated(WindowEvent a) { }
-				@Override
 				public void windowDeiconified(WindowEvent a) { }
-				@Override
 				public void windowIconified(WindowEvent a) { }
-				@Override
 				public void windowOpened(WindowEvent a) { }
 		});
 	}

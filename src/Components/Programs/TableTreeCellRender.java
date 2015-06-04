@@ -1,12 +1,12 @@
 package Components.Programs;
 
-
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Insets;
 
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -18,13 +18,29 @@ import javax.swing.tree.TreeModel;
 public class TableTreeCellRender implements TreeCellRenderer {
 		private JLabel root = null;
 		private ImageIcon icon = null;	
-		private ImageIcon check_16 = new ImageIcon(ClassLoader.getSystemResource("checked_16.png"));
-		private ImageIcon uncheck_16 = new ImageIcon(ClassLoader.getSystemResource("unchecked_16.png"));
+		private ImageIcon check = getCheckIcon();
+		private ImageIcon uncheck = getUncheckIcon();
 		private Font _default_font = new Font("Verdana", Font.ROMAN_BASELINE, 11);
+		private FontMetrics _default_font_metrics = null;
 		private String text = null;
-		@Override
+		
+		private ImageIcon getCheckIcon() {
+			ImageIcon icon = new ImageIcon(ClassLoader.getSystemResource("checked.png"));
+			icon.setImage(icon.getImage().getScaledInstance(16, 16, 50));
+			return icon;
+		}
+		
+		private ImageIcon getUncheckIcon() {
+			ImageIcon icon = new ImageIcon(ClassLoader.getSystemResource("unchecked.png"));
+			icon.setImage(icon.getImage().getScaledInstance(16, 16, 50));
+			return icon;
+		}
+		
+		
 		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded,	boolean leaf, int row, boolean hasFocus) {
-			if (value == null) return null;
+			if (value == null) {
+				return null;
+			}
 			int step = 0;
 			text = value.toString();
 									
@@ -43,18 +59,21 @@ public class TableTreeCellRender implements TreeCellRenderer {
 				icon = new ImageIcon(ClassLoader.getSystemResource("server.png"));
 				step = 2;
 			}
+
 			final JCheckBox box = new JCheckBox();
-			box.setBounds(17,-2,20,20);
-			box.setMargin(new Insets(0,0,0,0));
+			box.setBounds(17,-2,24,24);
+			box.setMargin(new Insets(5,5,5,5));
 			box.setOpaque(false);
 			box.setFocusable(false);
-			box.setIcon(uncheck_16);
-			box.setSelectedIcon(check_16);
+			box.setIcon(uncheck);
+			box.setSelectedIcon(check);
+
 			if (step == 0 && leaf) {
 				if (text != null && !text.startsWith("<html>")) {
-					text = "    " + text;
+					text = "      " + text;
 				}
 				root.setText(text.replace("<html>", "<html>&nbsp;&nbsp;&nbsp;&nbsp;").replace("</html>", "&nbsp;&nbsp;&nbsp;&nbsp;</html>"));
+				
 				for (int i = 0; i < model.getChildCount(model.getRoot()); i++) {
 					if (model.getChild(model.getRoot(), i) instanceof DefaultMutableTreeNode) {
 						DefaultMutableTreeNode node = (DefaultMutableTreeNode)model.getChild(model.getRoot(), i);
@@ -83,22 +102,31 @@ public class TableTreeCellRender implements TreeCellRenderer {
 			if (icon != null) {
 				root.setIcon(icon);
 			}
-			root.setForeground(box.isSelected() ? Color.BLACK : new Color(130,130,130));
+			root.setForeground(box.isSelected() || !leaf ? Color.BLACK : new Color(190,190,190));
 			if (selected) {
-				root.setOpaque(true);
+				root.setOpaque(leaf);
 				root.setForeground(Color.DARK_GRAY);
-				root.setBackground(new Color(200,200,200));
+				if (leaf) {
+					root.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+				}
 			}
 			root.setFont(_default_font);
-			String text = "";
-			boolean tag = false;
+			//String text = "";
+			//boolean tag = false;
+			text = text.replaceAll("\\<[^>]*>","");
+			text = text.replace("&nbsp;", " ");
+			/*
 			for (int i = 0; i < this.text.length(); i++) {
 				if (this.text.charAt(i) == '<') { tag = true; }
 				else if (this.text.charAt(i) == '>') { tag = false; continue; }
 				if (!tag) { text += this.text.charAt(i); }
 			}
-			root.setSize(root.getFontMetrics(root.getFont()).stringWidth(text), 18);
-			root.setPreferredSize(new Dimension((int)root.getFontMetrics(root.getFont()).getStringBounds(text, root.getGraphics()).getWidth() + 50, 18));
+			*/
+			_default_font_metrics = (_default_font_metrics == null ? root.getFontMetrics(_default_font) : _default_font_metrics);
+			root.setSize(_default_font_metrics.stringWidth(text) + 40, 50);
+			root.setMinimumSize(root.getSize());
+			root.setMaximumSize(root.getSize());
+			root.setPreferredSize(root.getSize());
 			return root;
 		}
 		

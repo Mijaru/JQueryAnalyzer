@@ -19,6 +19,17 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -56,6 +67,17 @@ public class JParametersPanel extends JPanel {
 		private boolean _hasBorder = true;
 		private int _connection_status;
 		
+		private Logger _log = Logger.getLogger("InstanceLog");
+		private String _log_file; 
+		
+		public Logger getLog() {
+			return _log;
+		}
+		
+		public File getLogFile() {
+			return new File(_log_file);
+		}
+		
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
 			if (_hasBorder) {
@@ -74,12 +96,59 @@ public class JParametersPanel extends JPanel {
 				
 				g.drawLine(b, 3, getWidth(), 3);
 				
-				g.drawLine(getWidth() - 1, 22, getWidth() - 1, getHeight());
+				g.drawLine(getWidth() - 1, 3, getWidth() - 1, getHeight());
 			}
 		}
 		
 		public JParametersPanel() {
 			super();
+
+			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss.SSS");
+			FileHandler fh;  
+			try {
+				_log_file = System.getProperty("user.dir") + "\\" + format.format(new Date()) + ".log";
+				Handler[] handlers = _log.getHandlers();
+				for(Handler handler : handlers) {
+				    _log.removeHandler(handler);
+				}
+				fh = new FileHandler(_log_file);
+				_log.addHandler(fh);
+				fh.setFormatter(new Formatter(){
+					
+					private final String LINE_SEPARATOR = System.getProperty("line.separator");
+					private final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+					
+					public String format(LogRecord record) {
+						 StringBuilder sb = new StringBuilder();
+					        sb.append(FORMAT.format(new Date(record.getMillis())))
+					            .append(" - ")
+					            .append(record.getLevel().getLocalizedName())
+					            .append(": ")
+					            .append(formatMessage(record))
+					            .append(LINE_SEPARATOR);
+					        if (record.getThrown() != null) {
+					        	try {
+					        		StringWriter sw = new StringWriter();
+					                PrintWriter pw = new PrintWriter(sw);
+					                record.getThrown().printStackTrace(pw);
+					                pw.close();
+					                sb.append(sw.toString());
+					            }
+					        	catch (Exception ex) {
+					            }
+					        }
+					        return sb.toString();
+					}
+				});
+			}
+			catch (SecurityException e) {  
+				e.printStackTrace();  
+			}
+			catch (IOException e) {  
+				e.printStackTrace();  
+			}
+			_log.setUseParentHandlers(false);
+			
 			_default_font = new Font("Verdana", Font.ROMAN_BASELINE, 11);
 			this.setLayout(null);
 			
@@ -88,7 +157,7 @@ public class JParametersPanel extends JPanel {
 			header.setFont(_default_font);
 			header.setForeground(new Color(40,145,200));
 			header.setName("header");
-			header.setOpaque(true);
+	
 			header.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
 			addComponentListener(new ComponentListener() {
 				public void componentHidden(ComponentEvent a) { }
@@ -99,12 +168,11 @@ public class JParametersPanel extends JPanel {
 					
 					if (event == null || _cur_height <= _min_height || _cur_height >= _max_height) {
 
-						//int width = header.getFontMetrics(header.getFont()).stringWidth(header.getText()) + 22;
 						header.setBounds(d.width - 24, 3, 24, 24);
-
+						header.setOpaque(true);
+						header.setBackground(Color.WHITE);
 						ImageIcon icon = new ImageIcon(ClassLoader.getSystemResource(isCollapsed() ? "show.png" : "hide.png"));
-						icon.setImage(icon.getImage().getScaledInstance(16, 16, Image.SCALE_AREA_AVERAGING));
-						
+						icon.setImage(icon.getImage().getScaledInstance(18, 18, Image.SCALE_AREA_AVERAGING));
 						header.setIcon(icon);
 						header.revalidate();
 						header.setToolTipText(isCollapsed() ? "Visualizar os parâmetros de conexão." : "Ocultar os parâmetros de conexão.");
@@ -122,7 +190,7 @@ public class JParametersPanel extends JPanel {
 				}
 			});
 			
-			header.addMouseListener(new MouseListener(){
+			header.addMouseListener(new MouseListener() {
 				public void mouseReleased(MouseEvent arg0) { }
 				public void mouseClicked(MouseEvent arg0) { }
 				public void mouseEntered(MouseEvent arg0) {
@@ -348,8 +416,9 @@ public class JParametersPanel extends JPanel {
 		        if (ups < 1)
 		            throw new IllegalArgumentException("You must display at least one frame per second!");
 		 
-		        if (ups > 1000)
+		        if (ups > 1000) {
 		            ups = 1000;
+		        }
 		        this.collapse = collapse;
 		        this.desiredUpdateTime = 1000000000L / ups;
 		        this.running = true;
@@ -438,7 +507,7 @@ public class JParametersPanel extends JPanel {
 		}
 		
 		
-		private boolean CollapsePane(boolean action, boolean paint) {
+		public boolean CollapsePane(boolean action, boolean paint) {
 			
 			// -> true = collapse
 			// -> false = expand

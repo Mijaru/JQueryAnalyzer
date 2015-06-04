@@ -16,9 +16,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.Iterator;
-
+import java.sql.SQLException;
+import java.util.logging.Logger;
 import java.awt.event.KeyListener;
 
 import javax.swing.BorderFactory;
@@ -36,8 +38,6 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
-import javolution.util.FastList;
-
 import Components.MainWindow;
 import Components.SQLConnectionManager;
 import Components.MainWindowComponents.JQDialog;
@@ -50,6 +50,9 @@ public class MR_ReplicaRecursos {
 	private Color _color_title;
 	private JTable _LIST;
 	private JLabel _active;
+	private Logger _log;
+	private JCheckBox recursosXML;
+	private JRadioButton mesclarRecursos;
 	
 	
 	public MR_ReplicaRecursos(SQLConnectionManager con) {
@@ -60,7 +63,8 @@ public class MR_ReplicaRecursos {
 	}
 	
 	private <unsigned> void init() {
-		_DIALOG = new JQDialog(MainWindow.getMainFrame(), "JQueryAnalizer - (mrDigital) Ferramenta para replicação de recursos");
+		_log = MainWindow.getActiveLog();
+		_DIALOG = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Ferramenta para replicação de recursos de usuários");
 		_DIALOG.setSize(_size);
 		_DIALOG.setMinimumSize(_size);
 		_DIALOG.setMaximumSize(_size);
@@ -68,6 +72,7 @@ public class MR_ReplicaRecursos {
 		_DIALOG.setLayout(null);
 		_DIALOG.setDefaultCloseOperation(JQDialog.DISPOSE_ON_CLOSE);
 		_DIALOG.setLocationRelativeTo(null);
+		_DIALOG.setIconImages(MainWindow.getMainIconList());
 		
 		JLabel text_1 = new JLabel("Lista de usuários cadastrados");
 		text_1.setFont(_font_title);
@@ -90,7 +95,6 @@ public class MR_ReplicaRecursos {
 		gbc.gridy = 0;
 		
 		ImageIcon ico_reload = new ImageIcon(ClassLoader.getSystemResource("refresh.png"));
-		ico_reload.setImage(ico_reload.getImage().getScaledInstance(20, 20, 100));
 		JLabel reload = new JLabel(ico_reload);
 		reload.setToolTipText("Atualiza a lista de usuários");
 		reload.addMouseListener(new MouseListener(){
@@ -111,12 +115,10 @@ public class MR_ReplicaRecursos {
 		gbc.gridx = 1;
 		area_1.add(new JBracket(1,20), gbc);
 		
-		ImageIcon ico_select = new ImageIcon(ClassLoader.getSystemResource("check_black.png"));
-		ico_select.setImage(ico_select.getImage().getScaledInstance(20, 20, 100));
+		ImageIcon ico_select = new ImageIcon(ClassLoader.getSystemResource("flag_blue.png"));
 		JLabel select = new JLabel(ico_select);
 		select.setToolTipText("Seleciona o usuário de referência para a replicação dos recursos!");
 		select.addMouseListener(new MouseListener(){
-			@Override
 			public void mouseClicked(MouseEvent me) {
 				JTableModel model = (JTableModel)_LIST.getModel();
 				if (model == null || _LIST.getSelectedRow() < 0) return;
@@ -129,13 +131,9 @@ public class MR_ReplicaRecursos {
 				}
 				_LIST.repaint();
 			}
-			@Override
 			public void mouseEntered(MouseEvent a) { }
-			@Override
 			public void mouseExited(MouseEvent a) { }
-			@Override
 			public void mousePressed(MouseEvent a) { }
-			@Override
 			public void mouseReleased(MouseEvent a) { }			
 		});
 		gbc.gridx = 2;
@@ -145,11 +143,10 @@ public class MR_ReplicaRecursos {
 		area_1.add(new JBracket(1,20), gbc);
 		
 		ImageIcon ico_clipboard = new ImageIcon(ClassLoader.getSystemResource("clipboard.png"));
-		ico_clipboard.setImage(ico_clipboard.getImage().getScaledInstance(20, 20, 100));
 		JLabel clipboard = new JLabel(ico_clipboard);
 		clipboard.setToolTipText("Copia a lista atual de usuarios para a area de trabalho");
 		clipboard.addMouseListener(new MouseListener() {
-			@Override public void mouseClicked(MouseEvent arg0) {
+			public void mouseClicked(MouseEvent arg0) {
 				JTableModel model = (JTableModel)_LIST.getModel();
 				StringBuffer columns = new StringBuffer();
 				StringBuffer content = new StringBuffer();
@@ -173,16 +170,16 @@ public class MR_ReplicaRecursos {
 				StringSelection select = new StringSelection(columns.toString() + "\n" + content.toString()); 
 				keyboard.setContents(select, null);  
 			}
-			@Override public void mouseEntered(MouseEvent arg0) { }
-			@Override public void mouseExited(MouseEvent arg0) { }
-			@Override public void mousePressed(MouseEvent arg0) { }
-			@Override public void mouseReleased(MouseEvent arg0) { }
+			public void mouseEntered(MouseEvent arg0) { }
+			public void mouseExited(MouseEvent arg0) { }
+			public void mousePressed(MouseEvent arg0) { }
+			public void mouseReleased(MouseEvent arg0) { }
 		});
 		gbc.gridx = 4;
 		area_1.add(clipboard, gbc);
 		
 		
-		Dimension dim_space = new Dimension(375, 24);
+		Dimension dim_space = new Dimension(380, 24);
 		_active = new JLabel("<html>Obtendo dados para preencher a lista, <i>aguarde</i>...</html>");
 		_active.setSize(dim_space);
 		_active.setPreferredSize(dim_space);
@@ -193,14 +190,9 @@ public class MR_ReplicaRecursos {
 		gbc.gridx = 5;
 		area_1.add(_active, gbc);
 		
-			
-		final ImageIcon ico_state_0 = new ImageIcon(ClassLoader.getSystemResource("check_gray.png"));
-		ico_state_0.setImage(ico_state_0.getImage().getScaledInstance(22, 22, 100));
-		final ImageIcon ico_state_1 = new ImageIcon(ClassLoader.getSystemResource("check_green.png")); // !!!!
-		ico_state_1.setImage(ico_state_1.getImage().getScaledInstance(22, 22, 100));
-		final ImageIcon ico_state_2 = new ImageIcon(ClassLoader.getSystemResource("check_blue.png"));
-		ico_state_2.setImage(ico_state_2.getImage().getScaledInstance(22, 22, 100));
-		
+		final ImageIcon ico_state_0 = new ImageIcon(ClassLoader.getSystemResource("flag-gray.png"));
+		final ImageIcon ico_state_1 = new ImageIcon(ClassLoader.getSystemResource("flag-green.png")); // !!!!
+		final ImageIcon ico_state_2 = new ImageIcon(ClassLoader.getSystemResource("flag-blue.png"));
 		
 		_LIST = new JTable();
 		_LIST.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
@@ -272,7 +264,7 @@ public class MR_ReplicaRecursos {
 			}
 		});
 		_LIST.addKeyListener(new KeyListener(){
-			@Override public void keyPressed(KeyEvent ke) {
+			public void keyPressed(KeyEvent ke) {
 				if (ke != null && (ke.getKeyChar() == ' ' || ke.getKeyChar() == '+' || ke.getKeyChar() == '-')) {
 					JTableModel model = (JTableModel)_LIST.getModel();
 					int state = -1;
@@ -292,15 +284,15 @@ public class MR_ReplicaRecursos {
 					_LIST.repaint();
 				}
 			}
-			@Override public void keyReleased(KeyEvent ke) { }
-			@Override public void keyTyped(KeyEvent arg0) { }
+			public void keyReleased(KeyEvent ke) { }
+			public void keyTyped(KeyEvent arg0) { }
 		});
 		_LIST.addMouseListener(new MouseListener(){
-			@Override public void mouseClicked(MouseEvent e) { }
-			@Override public void mouseEntered(MouseEvent e) { }
-			@Override public void mouseExited(MouseEvent e) { }
-			@Override public void mousePressed(MouseEvent e) { }
-			@Override public void mouseReleased(MouseEvent e) {
+			public void mouseClicked(MouseEvent e) { }
+			public void mouseEntered(MouseEvent e) { }
+			public void mouseExited(MouseEvent e) { }
+			public void mousePressed(MouseEvent e) { }
+			public void mouseReleased(MouseEvent e) {
 				if (e.getButton() == 1 && e.getClickCount() > 1) {
 					select(-1);
 				}
@@ -354,150 +346,37 @@ public class MR_ReplicaRecursos {
 
 		area_2.add(recursos);
 		
-		final JRadioButton fundir = new JRadioButton("Adicionar aos rec. dos usuários selecionados os rec. do usuário principal");
-		fundir.setBounds(10, 40, 450, 15);
-		fundir.setOpaque(false);
-		fundir.setFont(_font_title);
-		fundir.setSelected(false);
-		area_2.add(fundir);
-		fundir.addActionListener(new ActionListener(){
-			@Override public void actionPerformed(ActionEvent e) {
-				recursos.setSelected(!fundir.isSelected());
+		mesclarRecursos = new JRadioButton("Adicionar aos rec. dos usuários selecionados os rec. do usuário principal");
+		mesclarRecursos.setBounds(10, 40, 450, 15);
+		mesclarRecursos.setOpaque(false);
+		mesclarRecursos.setFont(_font_title);
+		mesclarRecursos.setSelected(false);
+		area_2.add(mesclarRecursos);
+		mesclarRecursos.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				recursos.setSelected(!mesclarRecursos.isSelected());
 			}			
 		});
 		recursos.addActionListener(new ActionListener(){
-			@Override public void actionPerformed(ActionEvent e) {
-				fundir.setSelected(!recursos.isSelected());
+			public void actionPerformed(ActionEvent e) {
+				mesclarRecursos.setSelected(!recursos.isSelected());
 			}			
 		});
 		
-		final JCheckBox campoXML = new JCheckBox("Replicar recursos XML do usuário principal");
-		campoXML.setBounds(10, 60, 300, 15);
-		campoXML.setOpaque(false);
-		campoXML.setFont(_font_title);
-		area_2.add(campoXML);
+		recursosXML = new JCheckBox("Replicar recursos XML do usuário principal");
+		recursosXML.setBounds(10, 60, 300, 15);
+		recursosXML.setOpaque(false);
+		recursosXML.setFont(_font_title);
+		area_2.add(recursosXML);
 		
 		final JButton replicar = new JButton("Replicar");
 		replicar.setBounds(250, 380, 135, 35);
 		replicar.setFont(_font_title);
 		replicar.setEnabled(false);
 		replicar.addActionListener(new ActionListener(){
-
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				JTableModel model = (JTableModel)_LIST.getModel();
-				int reference = 0;
-				int replicate = 0;
-				String sql_ref = "";
-				String sql_rep = "";
-				FastList<String> sql_merge = new FastList<String>();
-				//String sql = "UPDATE usuarios SET recursos=%REF% WHERE %REP%";
-				Exception fail = null;
-				try {
-					ResultSet rs = null;
-					byte[] recursos_a = null;
-					byte[] recursos_b = null;
-					byte[] recursos_c = null;
-					for (int row = 0; row < model.getRowCount(); row++) {
-						if (model.getState(row) == 2) {
-							rs = _CONNECTION.executeQuery("SELECT recursos, camposxml FROM usuarios WHERE recno=" + model.getValueAt(row, 6));
-
-							while (rs.next()) {
-								if (recursos.isSelected() || fundir.isSelected()) {
-									recursos_a = rs.getString(1).getBytes(_CONNECTION.getVariable("character_set_connection"));
-									sql_ref += "recursos='" + MainWindow.getSQLSafeString(rs.getString(1) != null ? rs.getString(1) : rs.getString(1)).trim() + "'";
-								}
-								if (campoXML.isSelected()) {
-									sql_ref += (sql_ref.isEmpty() ? "" : ", ") + "camposxml='" + MainWindow.getSQLSafeString(rs.getString(2) != null ? rs.getString(2) : rs.getString(2)).trim() + "'";
-								}
-							}
-							if (rs != null) { rs.close(); }
-							++reference;
-							
-						}
-					}
-					for (int row = 0; row < model.getRowCount(); row++) {
-						if (model.getState(row) == 1) {
-							sql_rep += (sql_rep.isEmpty() ? "" : " OR ") + "recno=" + model.getValueAt(row, 6);
-							
-							rs = _CONNECTION.executeQuery("SELECT recursos FROM usuarios WHERE recno=" + model.getValueAt(row, 6));
-
-							while (rs.next()) {
-								if (recursos.isSelected()) {
-									recursos_c = recursos_a;
-								}
-								else {
-									recursos_b = rs.getString(1).getBytes(_CONNECTION.getVariable("character_set_connection"));
-									recursos_c = new byte[Math.max(recursos_a.length, recursos_b.length)];
-									for (int i = 0; i < recursos_c.length; i++) {
-										recursos_c[i] = bitMerge((i < recursos_a.length ? recursos_a[i] : 0x00), (i < recursos_b.length ? recursos_b[i] : 0x00));
-									}
-								}
-								sql_merge.add("UPDATE usuarios SET recursos='" + MainWindow.getSQLSafeString(new String(recursos_c, _CONNECTION.getVariable("character_set_connection"))) + "' WHERE recno=" + model.getValueAt(row, 6));
-							}
-							if (rs != null) { rs.close(); }
-												
-							++replicate;
-						}
-					}
-					if (reference > 0 && replicate > 0) {
-						
-						if (JOptionPane.showConfirmDialog(null, "<html>Você está tentando " + (recursos.isSelected() ? "replicar" : "mesclar") + " recursos para <b>" + replicate + "</b> usuário(s).<br><br><font color=red>Tem certeza que deseja prosseguir?</font><br><br><font color=blue><b>Lembre-se que esse procedimento é irreversível e que um backup deve ser feito antes de qualquer alteração desta natureza!</b></font></html>", "JQueryAnalizer - Replicação/Mescla de recursos", JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
-							return;
-						}
-						
-						if (recursos.isSelected()) {
-							fail = _CONNECTION.executeUpdate("UPDATE usuarios SET " + sql_ref + " WHERE " + sql_rep);
-							if (fail != null) {
-								System.out.println("Falha ao replicar recursos do usuário selecionado (" + reference + ") para os usuarios replicados (" + replicate + ")\n" + fail.getMessage());
-							}
-							else {
-								Browser b = new Browser();
-								Thread t = new Thread(b);
-								t.start();
-								JOptionPane.showMessageDialog(_DIALOG, "<html>Replicação de recursos concluida com sucesso para <b>" + replicate + "</b> usuários</html>", "JQueryAnalizer - Procedimento concluído", JOptionPane.OK_OPTION);
-							}
-						}
-						else {
-							int count_error = 0;
-							Iterator<String> it = sql_merge.iterator();
-							System.out.println(sql_merge.size());
-							String sql = null;
-							while (it.hasNext()) {
-								sql = it.next();
-								fail = _CONNECTION.executeUpdate(sql);
-								if (fail != null) {
-									++count_error;
-									System.out.println("Falha ao fundir recursos do usuário selecionado (" + reference + ") para os usuarios replicados (" + replicate + ")\n" + fail.getMessage());
-								}
-							}
-							
-							if (count_error == 0) {
-								Browser b = new Browser();
-								Thread t = new Thread(b);
-								t.start();
-								JOptionPane.showMessageDialog(_DIALOG, "<html>Mescla de recursos concluida com sucesso para <b>" + replicate + "</b> usuários</html>", "JQueryAnalizer - Procedimento concluído com sucesso!", JOptionPane.OK_OPTION);								
-							}
-							else {
-								JOptionPane.showMessageDialog(_DIALOG, "<html>Ocorreram <b>" + count_error + "</b> durante a mescla de recursos.</html>", "JQueryAnalizer - Procedimento concluído com falha!", JOptionPane.OK_OPTION);
-							}
-						}
-						
-					}
-					else {
-						if (reference == 0) {
-							JOptionPane.showMessageDialog(_DIALOG, "<html>Não há usuário selecionado como <b>referência</b> para a replicação dos recursos!</html>", "JQueryAnalizer - Procedimento interrompido", JOptionPane.OK_OPTION);
-							return;
-						}
-						if (replicate == 0) {
-							JOptionPane.showMessageDialog(_DIALOG, "<html>Não há usuário(s) selecionado(s) como <b>alvos</b> para a replicação dos recursos!<br><i>É necessário que haja ao menos 1 (um) usuário como alvo da replicação de recursos</i></html>", "JQueryAnalizer - Procedimento interrompido", JOptionPane.OK_OPTION);
-							return;
-						}
-					}
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
+				Thread t = new Thread(new doExecute());
+				t.start();
 			}
 			
 		});
@@ -507,8 +386,6 @@ public class MR_ReplicaRecursos {
 		sair.setBounds(390, 380, 100, 35);
 		sair.setFont(_font_title);
 		sair.addActionListener(new ActionListener(){
-
-			@Override
 			public void actionPerformed(ActionEvent act) {
 				_DIALOG.dispose();
 			}
@@ -516,7 +393,7 @@ public class MR_ReplicaRecursos {
 		});
 		
 		final ActionListener action = new ActionListener(){
-			@Override public void actionPerformed(ActionEvent ae) {
+			public void actionPerformed(ActionEvent ae) {
 				boolean ref = false;
 				boolean rep = false;
 				JTableModel model = (JTableModel)_LIST.getModel();
@@ -524,27 +401,168 @@ public class MR_ReplicaRecursos {
 					if (model.getState(row) == 2) { ref = true; }
 					if (model.getState(row) == 1) { rep = true; }
 				}
-				replicar.setEnabled(ref && rep && (recursos.isSelected() || fundir.isSelected() || campoXML.isSelected())); 
+				replicar.setEnabled(ref && rep && (recursos.isSelected() || mesclarRecursos.isSelected() || recursosXML.isSelected())); 
 			}
 		};
 		final KeyListener key = new KeyListener() {
-			@Override public void keyPressed(KeyEvent arg0) { }
-			@Override public void keyReleased(KeyEvent arg0) { action.actionPerformed(null); }
-			@Override public void keyTyped(KeyEvent arg0) { }
+			public void keyPressed(KeyEvent arg0) { }
+			public void keyReleased(KeyEvent arg0) { action.actionPerformed(null); }
+			public void keyTyped(KeyEvent arg0) { }
 		};
 		final MouseListener mouse = new MouseListener() {
-			@Override public void mouseClicked(MouseEvent e) { action.actionPerformed(null); }
-			@Override public void mouseEntered(MouseEvent e) { }
-			@Override public void mouseExited(MouseEvent e) { }
-			@Override public void mousePressed(MouseEvent e) { }
-			@Override public void mouseReleased(MouseEvent e) { }
+			public void mouseClicked(MouseEvent e) { action.actionPerformed(null); }
+			public void mouseEntered(MouseEvent e) { }
+			public void mouseExited(MouseEvent e) { }
+			public void mousePressed(MouseEvent e) { }
+			public void mouseReleased(MouseEvent e) { }
 		};
 		recursos.addActionListener(action);
-		campoXML.addActionListener(action);
+		recursosXML.addActionListener(action);
 		select.addMouseListener(mouse);
 		_LIST.addKeyListener(key);
 		_LIST.addMouseListener(mouse);
 		_DIALOG.add(sair);
+	}
+	
+	private class doExecute implements Runnable {
+		public void run() {
+			JTableModel model = (JTableModel)_LIST.getModel();
+			try {
+				if (_log != null) _log.warning("\t[»»»] Tool: { Replicate Resources }\tBEGIN");
+				Connection con = _CONNECTION.getConnection();
+				PreparedStatement ps = null;
+				ResultSet rs = null;
+				int recno = 0;
+				byte[] reference_res = null, target_res = null;
+				String reference_xml = null, target_xml = null, reference = "", targets = "";
+				for (int i = 0; i < model.getRowCount(); i++) {
+					if (model.getState(i) == 2) {
+						reference = model.getValueAt(i, 1).toString();
+						ps = con.prepareStatement("SELECT camposxml, recursos FROM usuarios WHERE recno=?");
+						ps.setInt(1, Integer.parseInt(model.getValueAt(i, 6).toString()));
+						if (ps.execute()) {
+							rs = ps.getResultSet();
+							while (rs != null && rs.next()) {
+								reference_res = rs.getBytes("recursos");
+								reference_xml = rs.getString("camposxml");
+							}
+							if (rs != null && !rs.isClosed()) {
+								rs.close();
+							}
+							if (ps != null && !ps.isClosed()) {
+								ps.close();
+							}
+						}
+					}
+				}
+
+				for (int i = 0; i < model.getRowCount(); i++) {
+					if (model.getState(i) == 1) {
+						targets += (targets.length() > 0 ? ", " : "") + model.getValueAt(i, 1).toString();
+						ps = con.prepareStatement("SELECT camposxml, recursos, recno FROM usuarios WHERE recno=?");
+						ps.setInt(1, Integer.parseInt(model.getValueAt(i, 6).toString()));
+						if (ps.execute()) {
+							rs = ps.getResultSet();
+							while (rs != null && rs.next()) {
+								target_res = rs.getBytes("recursos");
+								target_xml = rs.getString("camposxml");
+								recno = rs.getInt("recno");
+							}
+							if (rs != null && !rs.isClosed()) {
+								rs.close();
+							}
+							if (ps != null && !ps.isClosed()) {
+								ps.close();
+							}
+
+							// -- processa as acoes dos recursos
+							byte[] res = null;
+							if (mesclarRecursos.isSelected()) {
+								res = (reference_res.length > target_res.length ? reference_res : target_res);
+								target_res = (reference_res.length > target_res.length ? target_res : reference_res);
+								for (int j = 0; j < res.length; j++) {
+									if (j < target_res.length) {
+										res[j] |= target_res[j];
+									}
+								}
+							}
+							else {
+								res = reference_res;
+							}
+							ps = con.prepareStatement("UPDATE usuarios SET recursos=? WHERE recno=?");
+							ps.setBytes(1, res);
+							ps.setInt(2, recno);
+							try {
+								if (!ps.execute()) {
+									if (_log != null) _log.info("\t[***] Tool: { Replicate Resources }\tReplicate resource from '" + reference + "' to '" + model.getValueAt(i, 1).toString() + "'");
+								}
+							}
+							catch (SQLException e) {
+								if (e != null) {
+									if (_log != null) _log.severe("\t[ERR] Tool: { Replicate Resources }\tReplicate resource (fails) from '" + reference + "' to '" + model.getValueAt(i, 1).toString() + "', Error: '" + /*e.getMessage() +*/ "'");
+									JOptionPane.showMessageDialog(null, "<html>Houve um erro ao setar os <u>recuros</u> para o usuário: <b>" + model.getValueAt(i, 1).toString() + "</b><br><i>Erro reportado:</i><font color='red'>" + e.getMessage() + "</font></html>", "JQueryPane - Erro!", JOptionPane.OK_OPTION);
+									e.printStackTrace();
+								}
+							}
+
+							if (rs != null && !rs.isClosed()) {
+								rs.close();
+							}
+							if (ps != null && !ps.isClosed()) {
+								ps.close();
+							}
+							if (recursosXML.isSelected()) {
+								int a, b, c, d;
+								a = reference_xml.toLowerCase().indexOf("<recursos>");
+								b = reference_xml.toLowerCase().indexOf("</recursos>", a);
+								if (a >= 0 && b >= 0) {
+									c = target_xml.toLowerCase().indexOf("<recursos>");
+									d = target_xml.toLowerCase().indexOf("</recursos>", c);
+									target_xml = target_xml.replace(target_xml.substring(c, d), reference_xml.substring(a, b));
+									
+									ps = con.prepareStatement("UPDATE usuarios SET camposxml=? WHERE recno=?");
+									ps.setString(1, target_xml);
+									ps.setInt(2, recno);
+									try {
+										if (!ps.execute()) {
+											if (_log != null) _log.info("\t[***] Tool: { Replicate Resources }\tReplicate resource XML from '" + reference + "' to '" + model.getValueAt(i, 1).toString() + "'");
+										}
+									}
+									catch (SQLException e) {
+										if (e != null) {
+											if (_log != null) _log.severe("\t[ERR] Tool: { Replicate Resources }\tReplicate resource XML (fails) from '" + reference + "' to '" + model.getValueAt(i, 1).toString() + "', Error: '" + /*e.getMessage() +*/ "'");
+											JOptionPane.showMessageDialog(null, "<html>Houve um erro ao setar os <u>recuros XML</u> para o usuário: <b>" + model.getValueAt(i, 1).toString() + "</b><br><i>Erro reportado:</i><font color='red'>" + e.getMessage() + "</font></html>", "JQueryPane - Erro!", JOptionPane.OK_OPTION);
+											e.printStackTrace();
+										}
+									}
+								}
+							}
+							if (rs != null && !rs.isClosed()) {
+								rs.close();
+							}
+							if (ps != null && !ps.isClosed()) {
+								ps.close();
+							}
+							// -- atualiza os recursos na tabela...
+						}
+					}
+				}
+				
+				if (reference.isEmpty()) {
+					JOptionPane.showMessageDialog(_DIALOG, "<html>Não há usuário selecionado como <b>referência</b> para a replicação dos recursos!</html>", "JQueryAnalizer - Aviso", JOptionPane.OK_OPTION);
+					return;
+				}
+				if (targets.isEmpty()) {
+					JOptionPane.showMessageDialog(_DIALOG, "<html>Não há usuário(s) selecionado(s) como <b>alvos</b> para a replicação dos recursos!<br><i>É necessário que haja ao menos 1 (um) usuário como alvo da replicação de recursos</i></html>", "JQueryAnalizer - Aviso", JOptionPane.OK_OPTION);
+					return;
+				}
+				if (_log != null) _log.warning("\t[«««] Tool: { Replicate Resources }\tEND");
+				JOptionPane.showMessageDialog(null, "<html>Cópia de recursos efetuada com sucesso!<br><b>Origem</b>: '" + reference + "'<br><b>Destinos</b>: '" + targets + "'</html>", "JQueryAnalizer - Concluido!", JOptionPane.INFORMATION_MESSAGE);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	public class Browser implements Runnable {
@@ -561,8 +579,6 @@ public class MR_ReplicaRecursos {
 			}
 			rs.close();
 			rs = _CONNECTION.executeQuery("SELECT '', usuario, depto, bloqueado, (recursos) AS 'MD5(Recursos)', (camposxml) AS 'MD5(CamposXML)', recno FROM usuarios ORDER BY depto, usuario, bloqueado, recursos");
-			//rs.last();
-			//rs.beforeFirst();
 			data = new String[row_cnt][cols.length];
 			for (int i = 0; rs.next(); i++) {
 				for (int j = 0; j < cols.length; j++) {
@@ -587,7 +603,6 @@ public class MR_ReplicaRecursos {
 		JTableModel model = new JTableModel(cols, data);
 		FontMetrics font_metrics = _LIST.getFontMetrics(_LIST.getFont());
 		_LIST.setModel(model);
-		//_LIST.setRowHeight(font_metrics.getHeight() + 6);
 		int[] column_width = new int[model.getColumnCount()];
 		for (int i = 0; i < model.getRowCount(); i++) {
 			for (int j = 0; j < model.getColumnCount(); j++) {
@@ -672,12 +687,10 @@ public class MR_ReplicaRecursos {
 			columnState[row] = (short)state;
 		}
         
-        
         @SuppressWarnings("unused")
 		public void setColumnNames(String[] data){
         	this.columnNames = data;
         }
-        
     
         @SuppressWarnings("unused")
 		public void setRows(Object[][] data){
@@ -717,7 +730,6 @@ public class MR_ReplicaRecursos {
         public Object getValueAt(int row, int col) {
             return data[row][col];
         }
-
         
         public boolean isCellEditable(int row, int col) {
         	if (getValueAt(row, col) instanceof String) {
@@ -742,19 +754,4 @@ public class MR_ReplicaRecursos {
 		}
 	}
 	
-	private byte bitMerge(byte a, byte b) {
-		String bit_a = Integer.toString(a, 2);
-		String bit_b = Integer.toString(b, 2);
-		String merge = "";
-		byte value_a = 0;
-		byte value_b = 0;
-		
-		for (byte i = 0; i < Math.max(bit_a.length(), bit_b.length()); i++) {
-			value_a = (byte)(i < bit_a.length() && bit_a.charAt(i) == '1' ? 1 : 0); 
-			value_b = (byte)(i < bit_a.length() && bit_a.charAt(i) == '1' ? 1 : 0);
-			merge += (value_a == 1 || value_b == 1 ? '1' : '0');
-		}
-		return (byte)(int)Integer.valueOf(merge, Character.MIN_RADIX);
-	}
-	 
 }

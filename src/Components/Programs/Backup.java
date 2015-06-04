@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -49,11 +50,11 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.border.AbstractBorder;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 
-import javolution.util.FastList;
 import Components.MainWindow;
 import Components.SQLConnectionManager;
 import Components.Util;
@@ -129,11 +130,10 @@ public class Backup {
 		_dialog.setResizable(false);
 		_dialog.setLayout(null);
 		_dialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		_dialog.setIconImage(new ImageIcon(ClassLoader.getSystemResource("data_backup.png")).getImage());
+		_dialog.setIconImages(MainWindow.getMainIconList());
 		
-		JLabel text1 = new JLabel("<html>Arquivo de <i>destino</i> do Backup:</html>");
+		JLabel text1 = new JLabel("<html>Arquivo de <b>destino</b> do Backup:</html>");
 		text1.setFont(_default_font);
-		text1.setForeground(Color.DARK_GRAY);
 		text1.setBounds(10,5,475,20);
 		text1.setOpaque(true);
 		_dialog.add(text1);
@@ -160,9 +160,8 @@ public class Backup {
 		_dialog.add(_file);
 		
 		// database de origem <-
-		JLabel text2 = new JLabel("<html>Selecione a <i>database</i>:</html>");
+		JLabel text2 = new JLabel("<html>Selecione a <b>database</b>:</html>");
 		text2.setFont(_default_font);
-		text2.setForeground(Color.DARK_GRAY);
 		text2.setBounds(10,55,475,20);
 		_dialog.add(text2);
 		
@@ -171,7 +170,7 @@ public class Backup {
 		_database.setOpaque(true);
 		_database.setBorder(null);
 		_database.setCellRenderer(new DatabaseTreeCellRender(null, null));
-		_database.setRowHeight(18);
+		_database.setRowHeight(22);
 		JScrollPane scrolls_1 = new JScrollPane(_database);
 		scrolls_1.setBounds(10,75,215,274);
 		scrolls_1.setAutoscrolls(true);
@@ -225,15 +224,22 @@ public class Backup {
 			}
 			public void mouseReleased(MouseEvent event) { }				
 		});
+		_database.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
+
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
+		
 		// tabelas da database a serem salvas <-
-		JLabel text3 = new JLabel("<html>Selecione as <i>tabelas</i>:</html>");
+		JLabel text3 = new JLabel("<html>Selecione as <b>tabelas</b>:</html>");
 		text3.setFont(_default_font);
-		text3.setForeground(Color.DARK_GRAY);
 		text3.setBounds(230,55,475,20);
 		_dialog.add(text3);
 		
 		_list = new JTree(new DefaultMutableTreeNode("Aguarde!"));
-		_list.getRootPane();
+		_list.setRowHeight(22);
 		_list.setCellRenderer(new TableTreeCellRender());
 		_list.setOpaque(true);
 		_list.addKeyListener(new KeyListener() {
@@ -252,13 +258,20 @@ public class Backup {
 			}
 			public void mouseReleased(MouseEvent event) { }
 		});
+		_list.setBorder(new AbstractBorder(){
+			private static final long serialVersionUID = 7066818237310557988L;
+
+			public Insets getBorderInsets(Component c) {
+				return new Insets(2,2,2,2);
+			}
+		});
+		
 		JScrollPane scrolls = new JScrollPane(_list);
 		scrolls.setBounds(230,75,255,274);
 		scrolls.setAutoscrolls(true);
 		_dialog.add(scrolls);
-			
-			
-		_run = new JButton("<html><u>E</u>xecutar Backup</html>");
+
+		_run = new JButton("<html>Executar Backup</html>");
 		_run.setFont(_default_font);
 		_run.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
@@ -357,7 +370,7 @@ public class Backup {
 		_run.setBounds(255,487,150,35);
 		_dialog.add(_run);
 		
-		_close = new JButton("<html><u>S</u>air</html>");
+		_close = new JButton("<html>Sair</html>");
 		_close.setMnemonic(KeyEvent.VK_S);
 		_close.setFont(_default_font);
 		_close.setBounds(410,487,75,35);
@@ -371,20 +384,19 @@ public class Backup {
 		});
 		_dialog.add(_close);
 			
-		_text4 = new JLabel("<html><i>Progresso</i> do backup:</html>");
+		_text4 = new JLabel("<html><b>Progresso</b> do backup:</html>");
 		_text4.setFont(_default_font);
-		_text4.setForeground(Color.DARK_GRAY);
 		_text4.setBounds(10,354,475,20);
 		_text4.setOpaque(true);
 		_dialog.add(_text4);
 			
 		_progress = new JProgressLabel();
 		_progress.setPanelBounds(10,374,475,35);
-		_progress.setText("selecione a database");
+		_progress.setText("Selecione a DATABASE");
 		_dialog.add(_progress);			
 			
 		JLabel opcoes = new JLabel();
-		opcoes.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "Opções de backup", SwingConstants.CENTER, SwingConstants.CENTER, _default_font, Color.DARK_GRAY));
+		opcoes.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), "<html><b>Opções</b> de backup:</html>", SwingConstants.CENTER, SwingConstants.CENTER, _default_font, Color.BLACK));
 		opcoes.setBounds(10,420,475,65);
 		_dialog.add(opcoes);
 			
@@ -457,7 +469,7 @@ public class Backup {
 		_options2.addItem("Microsoft SQL Server");
 		opcoes.add(_options2);
 		
-		_options3 = new JCheckBox("Não paginar consultas");
+		_options3 = new JCheckBox("Não paginar registros");
 		_options3.setBounds(10,500,200,15);
 		_options3.setFont(new Font("Verdana", Font.ROMAN_BASELINE, 11));
 		_dialog.add(_options3);
@@ -835,7 +847,7 @@ public class Backup {
 								limit 	= 1000,
 								size	= 0;
 			boolean 			single	= false;
-			List<String>		fields	= new FastList<String>();
+			List<String>		fields	= new ArrayList<String>();
 			
 			if (_connection.isTable(_table)) {
 				if (_mode == BackupMethod.FULL || _mode == BackupMethod.STRUCTURE_ONLY) {
@@ -943,7 +955,6 @@ public class Backup {
 								rs = null;
 							}
 						}
-					
 						// ------------------------------------------
 						// -> Obtem uma contagem dos registros     ->
 						// ------------------------------------------
@@ -954,7 +965,6 @@ public class Backup {
 								count = rs.getInt(1);
 								size = Math.min(1000, (int)(count * 0.1)); // --> 10% ou packs de 1000 registros.
 								size = Math.max(size, 250);
-								//limit = ((count / 1000f) > (int)(count / 1000f) ? (int)(count / 1000f) + 1 : (int)(count / 1000f));
 								limit = ((count / (size * 1f)) > (int)(count / (size * 1f)) ? (int)(count / (size * 1f)) + 1 : (int)(count / (size * 1f)));
 							}
 							if (rs != null && !rs.isClosed()) {
@@ -972,8 +982,10 @@ public class Backup {
 					// ------------------------------------------
 					switch (getBackupDestination()) {
 						case SQLConnectionManager.DB_MYSQL:
-							header = ("INSERT INTO [table] ([fields]) VALUES ").replace("[table]", _table).replace("[fields]", cols + (cols != null && col.isEmpty() ? "" : ",") + pk);
-							fields.add(pk);
+							header = ("INSERT INTO [table] ([fields]) VALUES ").replace("[table]", _table).replace("[fields]", cols + (pk != null && cols != null && !pk.isEmpty() && !cols.isEmpty() ? "," : "") + (pk != null && !pk.isEmpty() ? pk : ""));
+							if (pk != null && !pk.isEmpty()) {
+								fields.add(pk);
+							}
 							single = false;
 							break;
 							
@@ -1208,310 +1220,6 @@ public class Backup {
 	
 	
 	
-	
-	
-	
-	// -- desativado para testes...
-	/*
-	public class doBackup2 implements Runnable {
-		private String _TABLE;
-		public doBackup2 (String table) {
-			_TABLE = table;
-		}
-		public void run() {
-			try {
-				ResultSet rs = null;
-				float perc2 = 0;
-				float perc3 = 0;
-				
-				// -- estrutura da tabela.
-				if (_options != null && (_options.getSelectedIndex() == 0 || _options.getSelectedIndex() == 1)) {
-					String structure = "";
-					_progress.setText("<html>Exportando <u>estrutura</u> da tabela: <b>" + _TABLE.toLowerCase() + "</b></html>");
-					switch (getBackupDestination()) {
-						case 0:
-						case 2:
-							structure = "DROP " + (_connection.isTable(_TABLE) ? "TABLE" : "VIEW") + " IF EXISTS `" + _TABLE + "`;\r\n";
-							break;
-						case 1: // Oracle
-							structure = "SET ESCAPE OFF;\r\nSET ESCAPE \\;\r\nDROP TABLE " + _TABLE + ";\r\n";
-							break;
-						case 3:
-							structure = "IF EXISTS (SELECT * FROM sysobjects WHERE type='U' AND name='" + _TABLE + "') DROP TABLE " + _TABLE + ";\r\n";
-							break;
-					}
-					structure += _connection.getDumpStructure(_TABLE, getBackupDestination());
-					_output_stream.write(structure.getBytes("UTF-8"));
-					//_SELECTED_OUTPUTCHANNEL.write(ByteBuffer.wrap(structure.getBytes("UTF-8")));
-				}
-
-				// -- Registros da tabela (DADOS).
-				if (_connection.isTable(_TABLE) && _options != null && (_options.getSelectedIndex() == 0 || _options.getSelectedIndex() == 2)){
-					_progress.setText("<html>Preparando exportação dos <u>registros</u> da tabela: <b>" + _TABLE.toLowerCase() + "</b></html>");
-					
-					// -- contagem de páginas de registros para exportação otimizada.
-					rs = _connection.executeQuery("SELECT COUNT(*) FROM " + _TABLE);
-					StringBuffer out = null;
-					int count = 0;
-					int count2 = 0;
-					int pages = 0;
-					int page_size = 5000;
-					int min = 0;
-					int max = 0;
-					int row = 0;
-					int row2 = 0;
-					int block_size = 1000;
-					boolean control = true;
-					boolean header_parse = false;
-					int query_length = 0;
-					int query_maxlength = 0;
-					String item = null;
-					//String header = null;
-					StringBuffer header = null;
-					ResultSetMetaData header_data = null;
-					if (rs.next()) {
-						count = rs.getInt(1);
-						System.out.println("*** " + count + " Registros encontrados na tabela: " + _TABLE);
-					}
-					page_size = Math.max(page_size, (int)(count * (1.f / 100)));
-					// -- sem utilizar a paginação o total de paginas sera 1.
-					pages = (_options3.isSelected() ? 0 : (int)(count / page_size)) + 1;
-					rs.close();
-
-					StringBuffer large_objects = new StringBuffer();
-					
-					for (int j = 1; count > 0 && j <= pages; j++) {
-						min = max;
-						max = Math.min(j * page_size, count);
-						
-						// -- preparacao dos dados para exportação com base nas páginas definidas anteriormente.
-						_text4.setText("<html><i>Progresso</i> do backup: <font color='#000000'>Preparando registros para exportação... <i><b>" + j + "/" + pages + "</b></i></font></html>");
-						_progress.setText("<html>Exportando <u>registros</u> da tabela: <b>" + _TABLE.toLowerCase() + "</b> <i>" + (int)perc2 + "%</i></html>");
-						_progress.setItemProgress(perc2);
-						rs = _connection.getDumpData(_TABLE, getBackupDestination(), (_options3.isSelected() ? 0 : page_size), min);
-						if (rs == null) {
-							System.out.println("--- Falha ao obter os dados da tabela: " + _TABLE);
-							continue;
-						}
-						// ---> controle de encerramento dos comandos!
-						switch (_options2.getSelectedIndex()) {
-							case 0: // mysql
-							case 2: // postgre
-								block_size = 1000;
-								rs.last();
-								count2 = rs.getRow();
-								rs.beforeFirst();
-								break;
-							case 1: // oracle
-							case 3: // sql server
-								block_size = 1;
-								rs.last();
-								count2 = rs.getRow();
-								rs.beforeFirst();
-								break;
-						}
-						row2 = 0;
-						// --
-						
-						// -- insert header
-						//header = null;
-						header = new StringBuffer();
-						switch(_options2.getSelectedIndex()) {
-							case 0: // mysql
-							case 1: // oracle
-							case 2: // postgre
-							case 3: // sql server
-								//header = "INSERT INTO " + _TABLE + " (";
-								header.append("INSERT INTO ");
-								header.append(_TABLE);
-								header.append(" (");
-								break;
-						}
-						header_data = rs.getMetaData();
-						for (int a = 1; a <= header_data.getColumnCount(); a++) {
-							if (header_data.getColumnName(a) != null) {
-								switch(getBackupDestination()) {
-									case 0:
-										//header += "`" + header_data.getColumnName(a) + "`"; // mysql
-										header.append("`");
-										header.append(header_data.getColumnName(a));
-										header.append("`");
-										
-										break;
-									case 1:
-									case 2:
-										//header += header_data.getColumnName(a); // sql server.
-										header.append(header_data.getColumnName(a));
-										break;
-								}
-								if ((a) != header_data.getColumnCount()) {
-									//header += ",";
-									header.append(",");
-								}
-							}
-						}
-						//header += ")";
-						header.append(")");
-						
-						SimpleDateFormat DateFormat = null;
-						switch(getBackupDestination()) {
-							case 0:
-							case 2:
-								DateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-								break;
-							case 1:
-								DateFormat = new SimpleDateFormat("dd-MM-yyyy");
-								break;
-							case 3:
-								DateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-								break;
-						}
-						
-						
-						// -- insert values
-						control = (count2 > row2);
-						while (rs != null && count2 > 0 && control) {
-							out = new StringBuffer();
-							for (int i = 0; i < block_size && rs.next(); i++) {
-								++row;
-								++row2;
-								++_registers_processed;
-								if (!header_parse) {
-									switch(getBackupDestination()) {
-										case 0: // mysql
-										case 2: // postgre
-										case 3: // sql server
-											out.append(header + " VALUES \r\n");
-											break;
-										case 1: // oracle
-											out.append(header + " VALUES ");
-									}
-									header_parse = true;
-								}
-								
-								_paint_time = (_paint_time == 0 ? System.nanoTime() : _paint_time);
-								perc2 = (((row * 1.f) / count) * 100.f);
-								perc3 = ((_registers_processed * 1.f) / _registers_total) * 100.f;
-								if (_paint_time + (40000000) <= System.nanoTime() || perc3 == 100) {
-									_text4.setText("<html><i>Progresso</i> do backup: <font color='#000000'><i><b>" + ( Math.round(perc3 * Math.pow(10,1) ) / Math.pow(10, 1) ) + "%</b></i></font></html>");
-									_progress.setMainProgress(perc3);
-									_progress.setItemProgress(perc2);
-									_progress.setText("<html>Exportando <u>registros</u> da tabela: <b>" + _TABLE.toLowerCase() + "</b> <i>" + (int)perc2 +"%</i></html>");
-									_paint_time = System.nanoTime();
-								}
-								out.append("(");
-								query_maxlength = Math.max(query_maxlength, query_length);
-								query_length = out.length() + 2;
-								for (int b = 1; b <= header_data.getColumnCount(); b++) {
-									switch(header_data.getColumnType(b)) {
-										case Types.DATE:
-										case Types.TIME:
-										case Types.TIMESTAMP:
-											item = (rs.getString(b) == null ? "NULL" : "'" + (getBackupDestination() != 0 ? DateFormat.format(rs.getTimestamp(b)) : rs.getString(b)) + "'");
-											break;
-										case Types.FLOAT:
-										case Types.DECIMAL:
-										case Types.DOUBLE:
-											item = (rs.getString(b) == null ? "NULL" : String.valueOf(rs.getDouble(b)));
-											break;
-										case Types.INTEGER:
-										case Types.BIGINT:
-											item = (rs.getString(b) == null ? "NULL" : rs.getString(b));
-											break;
-										case Types.LONGVARCHAR:
-										case Types.CLOB:
-											switch(getBackupDestination()) {
-												case 0: // mysql
-												case 2: // postgre
-												case 3: // sql server
-													item = (rs.getString(b) == null ? "NULL" : "'" + getSafeString(rs.getString(b)) + "'");
-													break;
-											}												
-											break;
-											
-										case Types.BLOB:
-										case Types.VARBINARY:
-										case Types.LONGVARBINARY:
-											item = (rs.getString(b) == null ? (getBackupDestination() == 1 ? "empty_blob()" : "NULL") : toHex(rs.getBytes(b)));
-											break;
-										default:
-											item = (rs.getString(b) == null ? "NULL" : "'" + getSafeString(rs.getString(b)) + "'"); 
-									}
-	
-									query_length += item.length();
-									out.append(item);
-									if ((b) != header_data.getColumnCount()) {
-										out.append(","); 
-									}
-								}
-								out.append(")");
-								if ((block_size > 1 && (i + 1) == block_size || block_size == 1) || count2 == row2 || (out.length() + query_maxlength) >= 1048576) {
-									switch (getBackupDestination()) {
-										case 0: // mysql
-										case 1: // oracle
-										case 2: // postgree
-										case 3: // sql server
-											out.append(";\r\n");
-											if (large_objects.length() > 0) {
-												out.append(large_objects.toString());
-												large_objects = new StringBuffer();
-											}
-											break;									}
-									if (control == true && count2 == row2) {
-										control = false;
-									}
-									header_parse = false;
-									break;
-								}
-								else {
-									switch (getBackupDestination()) {
-										case 0: // mysql
-										case 1: // oracle!?
-										case 2: // postgree
-										case 3: // sql server
-											out.append(",\r\n");
-											break;
-									}
-								}
-							}
-							if (_thread == null) {
-								return;
-							}
-							_output_stream.write(out.toString().getBytes("UTF-8"));
-							//_SELECTED_OUTPUTCHANNEL.write(ByteBuffer.wrap(out.toString().getBytes("UTF-8")));
-							if (control && rs.getRow() == 0) {
-								control = false; 
-							}							
-						}
-						rs.close();
-					}
-				}
-			
-			}
-			catch (Exception e) {
-				_errors_io += 1;
-				e.printStackTrace();
-				if (e.getMessage() != null) {
-					JOptionPane.showMessageDialog(null, "<html><b>Houve um erro ao executar o <u>backup</u></b>. A aplicação retornou o(s) seguinte(s) erro(s):<br><font color='red'>" + e.getMessage() + "</font></html>", "Erro ao executar o backup!", JOptionPane.OK_OPTION);
-					int option = JOptionPane.showConfirmDialog(null, "<html>Deseja prosseguir com o backup!?<br><i>Haverá boas chances deste backup trazer dados truncados e/ou corrompidos</i>.</html>", "Confirmação", JOptionPane.YES_OPTION);
-					if (option == JOptionPane.NO_OPTION) {
-						return;
-					}
-					try {
-						_output_stream.write((";\r\n").getBytes("UTF-8"));
-						//_SELECTED_OUTPUTCHANNEL.write(ByteBuffer.wrap((";\r\n").getBytes())); 
-					}
-					catch (Exception e1) { }
-				}
-			}
-			if (_table_list != null && _table_list.size() > 0) {
-				_table_list.remove(0);
-				executeBackup();
-			}
-		
-		}
-	}
-	 */
 	
 	private class doCompact implements Runnable {
 		private int TAMANHO_BUFFER = 64 * 1024;

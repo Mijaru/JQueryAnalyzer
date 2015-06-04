@@ -12,16 +12,15 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.sql.ResultSet;
-import java.util.StringTokenizer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.border.LineBorder;
-
-import javolution.util.FastList;
 
 import Components.MainWindow;
 import Components.SQLConnectionManager;
@@ -33,6 +32,8 @@ public class CheckTables {
 	private JTextArea _LOG;
 	private SQLConnectionManager _CONNECTION;
 	private Thread _ACTIVE_THREAD;
+	private List<String> _TABLES = new ArrayList<String>();
+	private Logger _log;
 	
 	/** -CONSTRUTOR- */
 	public CheckTables(SQLConnectionManager connection) {
@@ -40,6 +41,8 @@ public class CheckTables {
 	}
 
 	public void startPrograma() {
+		_log = MainWindow.getActiveLog();
+		
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
 		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Verifica o status atual de cada tabela.");
@@ -51,6 +54,7 @@ public class CheckTables {
 		_FRAME.getGlassPane().setBackground(new Color(180, 191, 222));
 		_FRAME.setResizable(false);
 		_FRAME.getContentPane().setLayout(null);
+		_FRAME.setIconImages(MainWindow.getMainIconList());
 		_FRAME.addWindowListener(new WindowListener(){
 			public void windowActivated(WindowEvent event) { }
 			public void windowClosed(WindowEvent event) { }
@@ -65,8 +69,8 @@ public class CheckTables {
 		});
 		
 		_LOG = new JTextArea();
-		_LOG.setFont(new Font("Courier New", Font.ROMAN_BASELINE, 14));
-		_LOG.setText("INSTRUÇÕES:\n-----------\n	MySQL: Ao clicar em iniciar o script vai efetuar um\ndiagnóstico de cada uma das tabelas listadas na base\nselecionada.\n	Microsoft SQL Server: O script automaticamente vai\nrodar uma rotina para reparar todas as tabelas listadas na\nbase selecionada.\n");
+		_LOG.setFont(_FONT);
+		_LOG.setText("[#] Este script verifica o status das tabelas existentes na base selecionada.\n[>] MySQL: Ao clicar em iniciar o script vai efetuar um diagnóstico nas tabelas.\n[>] Microsoft SQL Server: O script vai efetuar a reparação automatica das tabelas.\n\n");
 		JScrollPane b1 = new JScrollPane(_LOG);
 		b1.setBounds(10, 10, 525, 310);
 		b1.setBorder(new LineBorder(Color.GRAY, 1, true));
@@ -95,26 +99,23 @@ public class CheckTables {
 		executar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent b) {
 				try {
-					boolean pass = false;
-					if (_LOG.getText() != null && !_LOG.getText().isEmpty()) {
-						int option = JOptionPane.showConfirmDialog(null, "Deseja checar apenas a lista de tabelas informada no corpo do assistente?", "JQueryAnalizer - Confirmaçao", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-						pass = (option == JOptionPane.YES_OPTION);
+					_LOG.append("---\n");
+					_LOG.append("[>] Localizando tabelas do sistema, seja paciente!!!\n");
+					for (String table : _CONNECTION.getTables()) {
+						_LOG.append("      » " + table + "\n");
+						_TABLES.add(table);
 					}
-					if (!pass) {
-						_LOG.setText("");
-						_LOG.append("» Localizando tabelas do sistema, seja paciente!!!\n");
-						for (String table : _CONNECTION.getTables()) {
-							_LOG.append("   " + table + "\n");
-						}
-					}
-					_LOG.append("\n» Executando verificação nas tabelas selecionadas!\n");
+					_LOG.append("\n[>] Executando verificação nas tabelas localizadass!\n");
+					
+					_log.warning("\t[»»»] Tool: { Check tables }\tBEGIN");
 					
 					switch (_CONNECTION.getServerType()) {
 						case 3: // -- Microsoft SQL Server
 							String item = "ALTER DATABASE " + _CONNECTION.getDatabase() + " SET single_user WITH no_wait;";
 							_LOG.append("   » " + item + "\n");
 							Exception e = _CONNECTION.executeUpdate(item);
-							_LOG.append("	> " + (e == null ? "OK" : "Erro: " + e.getCause()) + "\n");
+							_LOG.append("	   > " + (e == null ? "OK" : "Erro: " + e.getCause()) + "\n");
+							_log.info("\t[***] Tool: { Check tables }\t" + item + (e == null ? "" : " [Exception: " + e.getMessage() + "]"));
 							break;
 					}
 					Execute exec = new Execute();
@@ -130,56 +131,58 @@ public class CheckTables {
 	}
 	
 	private class Execute implements Runnable {
-		@Override
 		public void run() {
-			StringTokenizer st = new StringTokenizer(_LOG.getText(),"\n");
-			st.nextToken();
-			FastList<String> list = new FastList<String>();
 			String item = null;
-			while (st.hasMoreElements()) {
-				item = st.nextToken();
-				if (item.startsWith("   ")) {
-					list.add(item);
-				}
-				else {
-					break;
-				}
-			}
 			try {
 				ResultSet rs = null;
-				for (String table : list) {
+				for (String table : _TABLES) {
 					switch (_CONNECTION.getServerType()) {
-						case 1:
+						// -- MySQL
+						case 0:
 							item = "CHECK TABLE `" + table.trim() + "` EXTENDED";
 							rs = _CONNECTION.executeQuery(item);
 							_LOG.append("   » " + item + "\n");
+							_log.info("\t[***] Tool: { Check tables }\t" + item);
 							if (rs == null) {
-								_LOG.append("	> Erro: " + _CONNECTION.getLastError() + "\n");
+								Exception e = _CONNECTION.getLastError();
+								_LOG.append("      > Erro: " + e.getMessage() + " [" +e.getCause()+ "]\n");
+								_log.info("\t   ›  Tool: { Check tables }\tException: " + _CONNECTION.getLastError().getMessage());
 							}
 							while (rs != null && rs.next()) {
-								_LOG.append("	> Table: " + rs.getString(1) + "\n\t> Operation: " + rs.getString(2) + "\n\t> Type: " + rs.getString(3) + "\n\t> Text: " + rs.getString(4) + "\n\n");
+								_LOG.append("      › Table: " + rs.getString(1) + "\n      › Operation: " + rs.getString(2) + "\n      › Type: " + rs.getString(3) + "\n      › Text: " + rs.getString(4) + "\n\n");
+								_log.info("\t   1. Tool: { Check tables }\tTable: " + rs.getString(1));
+								_log.info("\t   2. Tool: { Check tables }\tOperation: " + rs.getString(2));
+								_log.info("\t   3. Tool: { Check tables }\tType: " + rs.getString(3));
+								_log.info("\t   4. Tool: { Check tables }\tText: " + rs.getString(4));
 							}
 							rs.close();
 							break;
+						// -- Microsoft SQL Server
 						case 3:
 							item = "DBCC CHECKTABLE ('" +table.trim()+ "', REPAIR_ALLOW_DATA_LOSS);";
 							_LOG.append("   » " + item + "\n");
+							_log.info("\t[***] Tool: { Check tables }\t" + item);
 							Exception e = _CONNECTION.executeUpdate(item);
 							if (e != null) { 
-								_LOG.append("		> Erro: " + e.getMessage() + " [" +e.getCause()+ "]\n");
+								_LOG.append("      > Erro: " + e.getMessage() + " [" +e.getCause()+ "]\n");
+								_log.info("\t   ›  Tool: { Check tables }\tException: " + _CONNECTION.getLastError().getMessage());
 							}
 							break;
 					}
+					_LOG.setCaretPosition(_LOG.getText().length());
 				}
 				switch (_CONNECTION.getServerType()) {
-					case 3: // -- Microsoft SQL Server
+					// -- Microsoft SQL Server
+					case 3:
 						item = "ALTER DATABASE " + _CONNECTION.getDatabase() + " SET multi_user WITH no_wait;";
 						_LOG.append("   » " + item + "\n");
 						Exception e = _CONNECTION.executeUpdate(item);
-						_LOG.append("	> " + (e == null ? "OK" : "Erro: " + e.getMessage() + " [" +e.getCause()+ "]") + "\n");
+						_LOG.append("      > " + (e == null ? "OK" : "Erro: " + e.getMessage() + " [" +e.getCause()+ "]") + "\n");
+						_log.info("\t[***] Tool: { Check tables }\t" + item + (e == null ? "" : " [Exception: " + e.getMessage() + "]"));
 						break;
 				}
-				_LOG.append("» Concluído!");
+				_LOG.append("[#] Concluído!");
+				_log.warning("\t[«««] Tool: { Check tables }\tEND");
 			}
 			catch (Exception e) {
 				e.printStackTrace();

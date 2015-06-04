@@ -7,6 +7,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -21,9 +22,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -63,14 +63,25 @@ import java.security.NoSuchAlgorithmException;
 
 public class MainWindow {
 	public static boolean _debug = false;
-	private String _version = "v.3.12 13/05/2015";
-	private JParametersPanel _PARAMETERS;
+	private static List<Image> _main_icon_list = new ArrayList<Image>();
+	
+	private String _version = "v3.14 04/06/2015";
+	private static JParametersPanel _PARAMETERS;
 	private static JPanel _MENU_MAIN;
 	private static int _ACTIVE_TAB_INDEX;
 	private static Component _ACTIVE_TAB;
 	private static JTabbedPane _tabbed_pane;
 	private static Properties _CONFIG;
 	private static String _CONFIG_FILE;
+	
+	
+	public static Logger getActiveLog() {
+		return _PARAMETERS.getLog();
+	}
+	
+	public static File getActiveLogFile() {
+		return _PARAMETERS.getLogFile();
+	}
 	
 	public static String getPropertie(String propertie, String def_value) {
 		if (_CONFIG != null && !_CONFIG.isEmpty()) {
@@ -87,8 +98,8 @@ public class MainWindow {
 
 	public static boolean saveProperties() {
 		try {
-			_CONFIG.store(new FileOutputStream(System.getProperty("user.dir") + "\\Config.properties"), _CONFIG.propertyNames().toString());
 			_CONFIG_FILE = (new File(System.getProperty("user.dir") + "\\Config.properties")).getCanonicalPath();
+			_CONFIG.store(new FileOutputStream(_CONFIG_FILE), _CONFIG.propertyNames().toString());
 			if (_MAIN == null || !_MAIN.isVisible()) {
 				System.exit(0);
 			}
@@ -99,8 +110,12 @@ public class MainWindow {
 	
 	
     public static Border border_left = new Border() {
-    	public Insets getBorderInsets(Component arg0) {	return new Insets(0,0,0,0); }
-    	public boolean isBorderOpaque() { return true; }
+    	public Insets getBorderInsets(Component arg0) {
+    		return new Insets(0,0,0,0); 
+    	}
+    	public boolean isBorderOpaque() {
+    		return true; 
+    	}
     	public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
     		Color lineColor = new Color(180,180,180);
     		Color oldColor = g.getColor();
@@ -113,8 +128,12 @@ public class MainWindow {
     };
     
     public static Border border_right = new Border() {
-		public Insets getBorderInsets(Component arg0) {	return new Insets(0,0,0,0); }
-		public boolean isBorderOpaque() { return true; }
+		public Insets getBorderInsets(Component arg0) {	
+			return new Insets(0,0,0,0); 
+		}
+		public boolean isBorderOpaque() {
+			return true; 
+		}
 		public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
 			Color lineColor = new Color(180,180,180);
 		    Color oldColor = g.getColor();
@@ -190,7 +209,15 @@ public class MainWindow {
 		});
 			
 		_MAIN.getContentPane().setLayout(new GridBagLayout());
-		_MAIN.setIconImage(new ImageIcon(ClassLoader.getSystemResource("JQueryAnalizer.png")).getImage());
+		
+		for (int i = 4; i < 32; i++) {
+			ImageIcon ico_main = new ImageIcon(ClassLoader.getSystemResource("JQueryAnalizer.png"));
+			ico_main.setImage(ico_main.getImage().getScaledInstance(4 * i, 4 * i, 100));
+			_main_icon_list.add(ico_main.getImage());
+		}
+		
+		_MAIN.setIconImages(_main_icon_list);
+		
 		MainWindowMenu menu = new MainWindowMenu();
 		_MAIN.setJMenuBar(menu != null ? menu.getMenu() : null);
 		
@@ -230,8 +257,8 @@ public class MainWindow {
         bt_db_restore.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent event) {
 				if ((MainWindow.getActiveTab() != null) && (MainWindow.getActiveTab() instanceof JQueryPane)) {
-					Restore restore = new Restore();
-					restore.start();
+					Restore program = new Restore();
+					program.startPrograma();
 				}
 			}
         });
@@ -446,15 +473,7 @@ public class MainWindow {
         _MAIN.setVisible(Boolean.parseBoolean(MainWindow.getPropertie("main_window_visible", "true")));
         
         System.out.println("----------------------------------------------------------------");
-        System.out.println(" BASE DIR: " + System.getProperty("user.dir"));                
-        System.out.println("----------------------------------------------------------------");
-        System.out.println(" CONFIG PROPERTIES: " + _CONFIG_FILE);
-        System.out.println("----------------------------------------------------------------");
-        Set<Entry<Object, Object>> object = _CONFIG.entrySet();
-        int i = 0;
-        for (Object obj : object.toArray()) {
-        	System.out.println(" " + (++i) + ". " + obj.toString().toUpperCase());
-        }
+        System.out.println(" USER.DIR: " + System.getProperty("user.dir"));                
         System.out.println("----------------------------------------------------------------");
 		for (Component c : _tabbed_pane.getComponents()) {
 			if (c == null) {
@@ -470,14 +489,14 @@ public class MainWindow {
 	private void addPanel(int type) {
 		JTabPanel new_panel = null;
 		String name = null;
-		ImageIcon icon = this._tab_gauge_icon;
+		ImageIcon icon = _tab_gauge_icon;
 		switch (type) {
-		case 0: // jquerypanel
+		case 0:
 			name = " Query ";
 			icon = _tab_query_icon;
 			new_panel = new JQueryPane();
 			break;
-		case 1: // jpefformacepanel
+		case 1:
 			name = " Desempenho ";
 			icon 	  = _tab_gauge_icon;
 			new_panel = new JPefformacePane();
@@ -553,6 +572,10 @@ public class MainWindow {
 		
 		text = text.replace("\n", "<br>");
 		return text;
+	}
+	
+	public static List<Image> getMainIconList() {
+		return _main_icon_list;
 	}
 	
 	public static String parseHtmlToPlain(String text) {

@@ -13,6 +13,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.util.logging.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -30,6 +31,7 @@ public class LocalizarColunas {
 	private Font _FONT = null;
 	private JTextArea _LOG;
 	private SQLConnectionManager _CONNECTION;
+	private Logger _log;
 	
 	/** -CONSTRUTOR- */
 	public LocalizarColunas(SQLConnectionManager connection) {
@@ -37,6 +39,8 @@ public class LocalizarColunas {
 	}
 
 	public void startPrograma() {
+		_log = MainWindow.getActiveLog();
+		
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
 		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Localiza as tabelas com determinada coluna.");
@@ -48,6 +52,7 @@ public class LocalizarColunas {
 		_FRAME.getGlassPane().setBackground(new Color(180, 191, 222));
 		_FRAME.setResizable(false);
 		_FRAME.getContentPane().setLayout(null);
+		_FRAME.setIconImages(MainWindow.getMainIconList());
 		_FRAME.addWindowListener(new WindowListener(){
 			public void windowClosing(WindowEvent arg0) {
 				_FRAME.dispose();
@@ -62,8 +67,8 @@ public class LocalizarColunas {
 		});
 		
 		_LOG = new JTextArea();
-		_LOG.setFont(new Font("Courier New", Font.ROMAN_BASELINE, 14));
-		_LOG.setText("INSTRUÇÕES:\n-----------\nClique em iniciar e informe o nome do campo que deseja\nlocalizar e aguarde a conclusão da busca e os resultados\nserão listados nesta tela.\n\nFunciona com MYSQL e MS SQL SERVER.\n\n");
+		_LOG.setFont(_FONT);
+		_LOG.setText("[#] Ao clicar em INICIAR, informe o nome do campo e aguarde a conclusão da busca.\n            » Funciona com os bancos de dados MYSQL e MS SQL SERVER.\n\n");
 		JScrollPane b1 = new JScrollPane(_LOG);
 		b1.setBounds(10, 10, 525, 310);
 		b1.setBorder(new LineBorder(Color.GRAY, 1, true));
@@ -77,14 +82,11 @@ public class LocalizarColunas {
 		_FRAME.add(copiar);
 		
 		copiar.addActionListener(new ActionListener() {
-
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				Clipboard teclado = Toolkit.getDefaultToolkit().getSystemClipboard();  
 				StringSelection selecao = new StringSelection(_LOG.getText()); 
 				teclado.setContents(selecao, null);  
 			}
-			
 		});
 
 		
@@ -94,13 +96,15 @@ public class LocalizarColunas {
 		_FRAME.add(executar);
 		
 		executar.addActionListener(new ActionListener() {
-
-			@Override
 			public void actionPerformed(ActionEvent b) {
 				int found = 0;
 				try {
 					String campo = JOptionPane.showInputDialog(null, "Informe o nome da coluna que deseja localizar", "JQueryAnalizer - Confirmação", JOptionPane.QUESTION_MESSAGE);
-					_LOG.append("» Localizando tabelas com o campo: " + campo + "\n");
+					_LOG.append("---\n");
+					_LOG.append("[>] Localizando tabelas com o campo: '" + campo + "'\n");
+					
+					_log.warning("\t[»»»] Tool: { Check for fields in tables }\tBEGIN");
+					
 					ResultSet rs = null;
 					ResultSetMetaData rs_meta = null;
 					for (String table : _CONNECTION.getTables()) {
@@ -110,7 +114,8 @@ public class LocalizarColunas {
 							for (int i = 1; i <= rs_meta.getColumnCount(); i++) {
 								if ((campo.contains("%") && rs_meta.getColumnName(i).toLowerCase().contains(campo.replace("%", "").toLowerCase())) || rs_meta.getColumnName(i).equalsIgnoreCase(campo)) {
 									++found;
-									_LOG.append("*** " + table + "\t[" + rs_meta.getColumnName(i) + "]\t -> " + rs_meta.getColumnTypeName(i) + "(" + rs_meta.getColumnDisplaySize(i) + ")" + "\n");
+									_LOG.append("      » " + table + "\t[" + rs_meta.getColumnName(i) + "]\t -> " + rs_meta.getColumnTypeName(i) + "(" + rs_meta.getColumnDisplaySize(i) + ")" + "\n");
+									_log.info("\t[***] Tool: { Check for fields in tables }\tField '" + campo + "' found at table '" + table + "'\t[" + rs_meta.getColumnName(i) + "->" + rs_meta.getColumnTypeName(i) + "(" + rs_meta.getColumnDisplaySize(i) + ")]");
 								}
 							}
 							
@@ -119,7 +124,9 @@ public class LocalizarColunas {
 							e.printStackTrace();
 						}
 					}
-					_LOG.append("» Concluido! " + found + " tabelas localizadas.\n");
+					_LOG.append("[#] Concluido! " + found + " tabelas localizadas.\n");
+					
+					_log.warning("\t[«««] Tool: { Check for fields in tables }\tEND");
 				}
 				catch (Exception e) { e.printStackTrace(); }
 			}

@@ -20,6 +20,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -30,8 +32,6 @@ import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-
-import javolution.util.FastList;
 
 import Components.MainWindowComponents.JQDialog;
 
@@ -49,7 +49,7 @@ public class ClipperLayoutEditor {
 	private Color _color_selected;
 	
 	private BufferedImage _grid;
-	private FastList<BufferedImage> _list = new FastList<BufferedImage>();
+	private List<BufferedImage> _list = new ArrayList<BufferedImage>();
 	private Dimension _page_size_px;
 	
 	private enum tool {POINTER, TEXT, LINE, RECT, RECTFILL};
@@ -378,7 +378,7 @@ public class ClipperLayoutEditor {
 				_mouse_y = e.getY();
 				_mouse_pressed = true;
 				Graphics2D g = (Graphics2D)_grid.getGraphics();
-				FastList<String> lines = new FastList<String>();
+				List<String> lines = new ArrayList<String>();
 				String text = "";
 				String subt = "";
 				JEditorPane obj = null;

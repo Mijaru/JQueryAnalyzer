@@ -10,13 +10,13 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 
 import com.sun.org.apache.xml.internal.security.utils.Base64;
 
-import javolution.util.FastList;
 import Components.MainWindow;
 import Components.SQLConnectionManager;
 import Components.Util;
@@ -42,18 +42,22 @@ public class JThreadCommands implements Runnable {
 		}
 		
 		public void run() {
-			if (MainWindow._debug) {
-				System.out.println("<- src.Components.MainWindowComponents.JThreadCommands() ->> index: " + _index + ", options: " + _options + ", parent: " + _parent_component);
-			}
 			System.gc();
 			switch(_index) {
 				case 0: // iniciar a conexão com o servidor
 					if (_parent_component instanceof JTabPanel) {
 						JTabPanel pane = (JTabPanel)_parent_component;
 						JParametersPanel parameters = pane.getParameters();
+						Logger log = parameters.getLog();
 						if (parameters != null) {
 							parameters.updateConnectionStatus(2);
 							parameters.setColapsed(Boolean.getBoolean(MainWindow.getPropertie("main_info_initcolapse", "false")));
+							if (log != null) {
+								log.info("\t[***] Starting new JDBC connection with Database/Schema");
+								log.info("\t    » Connection String: " + parameters.getConnectionString());
+								log.info("\t    » User: " + parameters.getUser());
+								log.info("\t    » Pass: " + parameters.getPass());
+							}
 						}
 						if (pane instanceof JQueryPane) {
 							((JQueryPane)pane).addHistory(new JHistory(Type.CONNECTION, parameters));
@@ -61,6 +65,9 @@ public class JThreadCommands implements Runnable {
 						pane.openConnection();
 						SQLConnectionManager con = pane.getConnection();
 						
+						if (log != null) {
+							log.info("\t[***] Connection Status: " + (con.isConnected() ? "CONNECTED" : "FAIL (Exception: " + con.getLastError() + ")"));
+						}
 						
 						// --
 
@@ -103,6 +110,7 @@ public class JThreadCommands implements Runnable {
 						Statement					 st = null;
 						ResultSetMetaData		   meta = null;
 						ResultSet					 rs = null;
+						Logger 						log = parameters.getLog();
 
 						panel.addQueryHistory(_options);
 
@@ -119,6 +127,7 @@ public class JThreadCommands implements Runnable {
 								connection.setLastQueryTime(0);
 								panel.updateStatus("Executando: '" + commands[i].subSequence(0, commands[i].length() > 20 ? 20 : commands[i].length()) + "...'<br>\\:> <b>WAIT</b> | <font color='blue'>Aguardando resposta do banco de dados...</font>");
 								long time = System.currentTimeMillis();
+								log.info("\t[>>>] " + commands[i]);
 								boolean type = st.execute(commands[i]);
 								connection.setLastQueryTime((System.currentTimeMillis() - time) / 1000.D);
 								if (type) {
@@ -126,8 +135,8 @@ public class JThreadCommands implements Runnable {
 									rs = st.getResultSet();
 									meta = rs.getMetaData();
 									String[]   		columns = new String[meta.getColumnCount()];
-									FastList<Object[]> list = new FastList<Object[]>();
-									FastList<Object> record = new FastList<Object>();
+									List<Object[]> list = new ArrayList<Object[]>();
+									List<Object> record = new ArrayList<Object>();
 									int           row_count = 0;
 									
 									for (int j = 1; j <= meta.getColumnCount(); j++) {
@@ -140,8 +149,13 @@ public class JThreadCommands implements Runnable {
 							        	++row_count;
 							        	for (int j = 1; j <= meta.getColumnCount(); j++) {
 											switch (meta.getColumnType(j)) {
-												case Types.INTEGER:
+												case Types.SMALLINT:
+													record.add(rs.getShort(j));
+													break;
 												case Types.BIGINT:
+													record.add(rs.getLong(j));
+													break;
+												case Types.INTEGER:
 												case Types.BIT:
 												case Types.TINYINT:
 													record.add(rs.getInt(j));
@@ -162,6 +176,7 @@ public class JThreadCommands implements Runnable {
 													record.add(rs.getString(j));
 													break;
 												case Types.BLOB:	// SQL SERVER
+												case Types.LONGVARBINARY:
 												case Types.BINARY:
 													InputStream stream = rs.getBinaryStream(j);
 													try {
@@ -186,12 +201,14 @@ public class JThreadCommands implements Runnable {
 							            list.add(record.toArray(new Object[record.size()]));
 							            record.clear();
 							        }
+							        log.info("\t[<<<] Query: OK, " + row_count + " rows returned.");
 							        panel.updateStatus("A consulta retornou: <b>" + row_count + "</b> resultados,<br>preparando páginas para exibição...");
 							        rs.close();
 							        panel.updateQueryList(columns, list.toArray(new Object[list.size()][columns.length]));
 								}
 								else {
-								// -- update
+									log.info("\t[<<<] Update: OK");
+									// -- update
 									panel.updateStatus("Comando executado com sucesso.<br>\\:> <b>OK</b>" + (st.getUpdateCount() >= 0 ? "| <b>" + st.getUpdateCount() + "</b> registros afetados." : ""));
 									alias = commands[i].replace("  ", " ").trim().toLowerCase();
 									if (connection != null && connection.isConnected()) {
@@ -246,6 +263,8 @@ public class JThreadCommands implements Runnable {
 							}
 							catch (SQLException e) {
 								if (e != null && e.getMessage() != null) {
+									e.printStackTrace();
+									log.warning("\t[ERR] Error: { " + e.getMessage() + " }");
 									panel.updateStatus("Comando retornou um erro!<br>\\:> <b><font color='red'>FAIL</font></b>");
 									panel.updateQueryStatus("O comando SQL: <font color=blue><u>" + commands[i].subSequence(0, commands[i].length() > 64 ? 64 : commands[i].length()) + "</u></font> retornou a seguinte messagem de erro: " , e);
 									if ((commands.length - (2 + i)) > 0) {

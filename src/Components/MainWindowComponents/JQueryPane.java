@@ -12,6 +12,7 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -28,11 +29,11 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -44,14 +45,16 @@ import javax.swing.JTable;
 import javax.swing.JTextPane;
 import javax.swing.JToolTip;
 import javax.swing.JTree;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.AbstractBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
+import javax.swing.border.LineBorder;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
@@ -67,8 +70,9 @@ import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
-
-import javolution.util.FastList;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 
 import java.sql.Connection;
 
@@ -87,7 +91,7 @@ public class JQueryPane extends JTabPanel  {
 		private Object[][] _QUERY_DATA;
 		
 		// ------------------------------------------------------
-		private static List<JHistory> _history = new FastList<JHistory>();
+		private static List<JHistory> _history = new ArrayList<JHistory>();
 		private int _current_history;
 		private int _current_page;
 		// ------------------------------------------------------
@@ -125,10 +129,10 @@ public class JQueryPane extends JTabPanel  {
 						continue; 
 					}
 					if ((row % 2) == 0) {
-						setBackground(new Color(220,220,220));
+						setBackground(new Color(240,240,240));
 					}
 					else {
-						setBackground(new Color(240,240,240)); 
+						setBackground(new Color(250,250,250)); 
 					}
 					setFont(_table_d.getFont());
 				}
@@ -160,10 +164,10 @@ public class JQueryPane extends JTabPanel  {
 						continue; 
 					}
 					if ((row % 2) == 0) {
-						setBackground(new Color(220,220,220));
+						setBackground(new Color(240,240,240));
 					}
 					else {
-						setBackground(new Color(240,240,240)); 
+						setBackground(new Color(250,250,250)); 
 					}
 					setFont(_table_d.getFont());
 				}
@@ -196,10 +200,10 @@ public class JQueryPane extends JTabPanel  {
 						continue; 
 					}
 					if ((row % 2) == 0) {
-						setBackground(new Color(220,220,220));
+						setBackground(new Color(240,240,240));
 					}
 					else {
-						setBackground(new Color(240,240,240)); 
+						setBackground(new Color(250,250,250)); 
 					}
 					setFont(_table_d.getFont());
 				}
@@ -214,7 +218,6 @@ public class JQueryPane extends JTabPanel  {
                  return new Insets(insets.top + 3, insets.left + 3, insets.bottom + 3, insets.right + 3);
 			 }
 		}
-		
 		
 		public JQueryPane() {
 			super();
@@ -262,7 +265,6 @@ public class JQueryPane extends JTabPanel  {
 	        
 	        ActionListener script_editor_listener = new ActionListener(){
 				public void actionPerformed(ActionEvent event) {
-					//toggleEditor();
 					updateQueryLabel();
 				}
 	        };
@@ -366,8 +368,7 @@ public class JQueryPane extends JTabPanel  {
 			
 				_list_c1 = new JTree(new DefaultMutableTreeNode("Desconectado"));
 				_list_c1.getRootPane();
-				_list_c1.setRowHeight(18);
-				
+				_list_c1.setRowHeight(22);
 				_list_c1.setCellRenderer(new TreeCellRenderer(){
 					private JLabel root = new JLabel();
 					private ImageIcon icon;
@@ -406,22 +407,33 @@ public class JQueryPane extends JTabPanel  {
 						if (_PARAMETERS != null) {
 							item = _PARAMETERS.getDatabase();
 							if (value.toString() != null && item != null && value.toString().equalsIgnoreCase(item)) {
-								root.setForeground(Color.BLUE);
+								root.setForeground(new Color(0,153,255));
 							}
 						}
 						if (selected) {
 							root.setOpaque(true);
-							root.setForeground(Color.WHITE);
-							root.setBackground(Color.DARK_GRAY);
+							root.setForeground(Color.DARK_GRAY);
+							//root.setBackground(Color.DARK_GRAY);
+							root.setBorder(new LineBorder(Color.LIGHT_GRAY, 1, true));
 						}
 						root.setFont(new Font("Verdana", (isRoot || (value.toString() != null && item != null && value.toString().equalsIgnoreCase(item))) ? Font.BOLD : Font.PLAIN, 12));
+						root.setSize(root.getFontMetrics(root.getFont()).stringWidth(value.toString()) + 30, 50);
+						root.setMinimumSize(root.getSize());
+						root.setMaximumSize(root.getSize());
+						root.setPreferredSize(root.getSize());
 						return root;
 					}
 					
 				});
 				
 				_list_c1.setOpaque(true);
-				_list_c1.setBackground(new Color(250,250,250));
+				_list_c1.setBorder(new AbstractBorder(){
+					private static final long serialVersionUID = 7066818237310557988L;
+
+					public Insets getBorderInsets(Component c) {
+						return new Insets(2,2,2,2);
+					}
+				});
 				
 				_list_c1.addMouseListener(new MouseListener(){
 					public void mouseClicked(MouseEvent event) {
@@ -430,69 +442,184 @@ public class JQueryPane extends JTabPanel  {
 						tree = tree.replace("[", "");
 						tree = tree.replace("]", "");
 						tree = tree.replace(", ", ",");
-						if (getConnection() != null && getConnection().getServerType() != 0) {
-							System.out.println("menu de contexto desativado para servidores que não sejam o mysql.");
+						if (_CONNECTION == null || !_CONNECTION.isConnected()) {
 							return;
 						}
 						final String[] selection = tree.split(",");
 						if (event.getButton() == 3) {
 							JPopupMenu popup = new JPopupMenu();
+							JMenuItem[] items = null;
 							if (selection.length == 2) {
-								SQLConnectionManager con = MainWindow.getActiveTabConnection();
-								if (con == null || !con.isConnected()) {
-									return;
-								}
-								JMenuItem[] items = null;
-								switch (con.getServerType()) {
+								items = new JMenuItem[3];
+								items[0] = new JMenuItem("<html>Selecionar database <b><font color='green'>[base]</font></b></html>".replace("[base]", selection[1]));
+								items[0].setName("sel_database");
+								items[1] = new JMenuItem("<html>Excluir base <b><font color='red'>[base]</font></b></html>".replace("[base]", selection[1]));
+								items[1].setName("del_database");
+								items[2] = new JMenuItem("Nova database");
+								items[2].setName("add_database");
 								
-									// -- Menu para banco MYSQL
+								popup.add(items[0]);
+								popup.add(new JSeparator());
+								popup.add(items[1]);
+								popup.add(items[2]);
+							}
+							if (selection.length == 3) {
+								items = new JMenuItem[4];
 								
-									case 0:
-										items = new JMenuItem[4];
-										// -- selecionar
-										items[0] = new JMenuItem("<html>Selecionar base <i><font color='green'>%BASE%</font></i></html>".replace("%BASE%", selection[1]));
-										items[0].addActionListener(new ActionListener(){
-											public void actionPerformed(ActionEvent e) {
-												runLater(new JThreadCommands(1, "USE `%BASE%`".replace("%BASE%", selection[1]), MainWindow.getActiveTab()));
-											}
-										});
-										// -- mais opcoes
-										items[1] = new JMenu("Mais opções da base");
-										// -- -- remover base.
-										items[2] = new JMenuItem("<html>Excluir base <i><font color='red'>%BASE%</font></i></html>".replace("%BASE%", selection[1]));
-										items[2].addActionListener(new ActionListener(){
-											public void actionPerformed(ActionEvent e) {
-												int option = JOptionPane.showConfirmDialog(null, "<html>Deseja realmente excluir a base: <i><b><font color='red'>%BASE%</font></b></i><br><br><b>Este processo é irreversível!</b></html>".replace("%BASE%", selection[1]), "Confirmação!", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+								items[0] = new JMenuItem("<html>Ver script para criar a tabela<html>");
+								items[0].setName("table_create");
+								items[1] = new JMenuItem("<html>Visuarlizar campos</html>");
+								items[1].setName("table_fields");
+								items[2] = new JMenuItem("<html>Apagar registros</html>");
+								items[2].setName("table_erase");
+								items[3] = new JMenuItem("<html>Apagar estrutura e registros</html>");
+								items[3].setName("table_drop");
+										
+								popup.add(items[0]);
+								popup.add(items[1]);
+								popup.add(new JSeparator());
+								popup.add(items[2]);
+								popup.add(items[3]);
+							}
+							
+							ActionListener action = new ActionListener() {
+								public void actionPerformed(ActionEvent event) {
+									if (event != null && event.getSource() instanceof JMenuItem) {
+										JMenuItem source = (JMenuItem)event.getSource();
+										String sql = null;
+										switch (source.getName()) {
+											//
+											case "table_create":
+												sql = _CONNECTION.getTableStructure(selection[2], _CONNECTION.getServerType());
+												_text_c2.setText(sql);
+												break;
+											//
+											case "table_fields":
+												switch (_CONNECTION.getServerType()) {
+													case SQLConnectionManager.DB_ORACLE:
+														sql = ("DESC [database].[table]").replace("[table]", selection[2]).replace("[database]", selection[1]);
+														break;
+													case SQLConnectionManager.DB_POSTGREE:
+														break;
+													case SQLConnectionManager.DB_MSSQL:
+														String old_data = _CONNECTION.getDatabase();
+														String new_data = selection[1];
+														sql = "";
+														if (!old_data.equalsIgnoreCase(new_data)) { sql += "USE [new_database];\n"; }
+														sql += "SELECT * FROM information_schema.columns WHERE table_name='[table]' ORDER BY ordinal_position;\n";
+														if (!old_data.equalsIgnoreCase(new_data)) { sql += "USE [old_database];\n"; }
+														sql = sql.replace("[new_database]", new_data);
+														sql = sql.replace("[old_database]", old_data);
+														sql = sql.replace("[table]", selection[2]);
+														break;
+													case SQLConnectionManager.DB_MYSQL:
+														sql = ("DESCRIBE `[database]`.`[table]`;").replace("[table]", selection[2]).replace("[database]", selection[1]);
+														break;
+												}
+												runLater(new JThreadCommands(1, sql, MainWindow.getActiveTab()));
+												break;
+											//
+											case "table_erase":
+												switch (_CONNECTION.getServerType()) {
+													case SQLConnectionManager.DB_ORACLE:
+													case SQLConnectionManager.DB_POSTGREE:
+													case SQLConnectionManager.DB_MSSQL:
+														sql = ("DELETE FROM [database].[table];").replace("[table]", selection[2]).replace("[database]", selection[1]);
+														break;
+													case SQLConnectionManager.DB_MYSQL:
+														sql = ("DELETE FROM `[database]`.`[table]`;").replace("[table]", selection[2]).replace("[database]", selection[1]);
+														break;
+												}
+												_text_c2.setText(sql);
+												break;
+											//
+											case "table_drop":
+												switch (_CONNECTION.getServerType()) {
+													case SQLConnectionManager.DB_ORACLE:
+													case SQLConnectionManager.DB_POSTGREE:
+													case SQLConnectionManager.DB_MSSQL:
+														sql = ("DROP TABLE [database].[table];").replace("[table]", selection[2]).replace("[database]", selection[1]);
+														break;
+													case SQLConnectionManager.DB_MYSQL:
+														sql = ("DROP TABLE `[database]`.`[table]`;").replace("[table]", selection[2]).replace("[database]", selection[1]);
+														break;
+												}
+												_text_c2.setText(sql);
+												break;
+											
+											// ~ // ~ // ~ // ~ // ~ // ~ // ~ // ~ // ~ // ~ //
+												
+											case "sel_database":
+												switch (_CONNECTION.getServerType()) {
+													case SQLConnectionManager.DB_ORACLE:
+														sql = ("ALTER SESSION SET current_schema='[base]';").replace("[base]", selection[1]);
+														break;
+													case SQLConnectionManager.DB_POSTGREE:
+														sql = ("SET SCHEMA '[base]';").replace("[base]", selection[1]);
+														break;
+													case SQLConnectionManager.DB_MSSQL:
+														sql = ("USE [base];").replace("[base]", selection[1]);
+														break;
+													case SQLConnectionManager.DB_MYSQL:
+														sql = ("USE `[base]`;").replace("[base]", selection[1]);
+														break;
+												}
+												runLater(new JThreadCommands(1, sql, MainWindow.getActiveTab()));
+												break;
+											//
+											case "del_database":
+												int option = JOptionPane.showConfirmDialog(null, "<html>Deseja realmente excluir a base: <i><b><font color='red'>[base]</font></b></i><br><br><b>Este processo é irreversível!</b></html>".replace("[base]", selection[1]), "Confirmação!", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 												if (option == JOptionPane.YES_OPTION) {
-													runLater(new JThreadCommands(1, "DROP DATABASE `%BASE%`".replace("%BASE%", selection[1]), MainWindow.getActiveTab()));
+													switch (_CONNECTION.getServerType()) {
+														case SQLConnectionManager.DB_ORACLE:
+														case SQLConnectionManager.DB_POSTGREE:
+														case SQLConnectionManager.DB_MSSQL:
+															sql = ("DROP DATABASE [base];").replace("[base]", selection[1]);
+															break;
+														case SQLConnectionManager.DB_MYSQL:
+															sql = ("DROP DATABASE `[base]`;").replace("[base]", selection[1]);
+															break;
+													}
+													_text_c2.setText(sql);
 												}
-											}
-										});
-										items[1].add(items[2]);
-										
-										// -- criar base
-										items[3] = new JMenuItem("Criar base");
-										items[3].addActionListener(new ActionListener(){
-											public void actionPerformed(ActionEvent e) {
-												String database = JOptionPane.showInputDialog(null, "<html>Informe o nome da base a ser criada.<br><br><b>Este processo requer privilégios elevados no banco de dados!</b></html>", "Confirmação!", JOptionPane.INFORMATION_MESSAGE);
-												if (database != null && !database.isEmpty()) {
-													runLater(new JThreadCommands(1, "CREATE DATABASE `%BASE%`".replace("%BASE%", database), MainWindow.getActiveTab()));
+												break;
+											//
+											case "add_database":
+												String base = JOptionPane.showInputDialog(null, "<html>Informe o nome da base a ser criada.<br><br><b>Este processo requer privilégios elevados no banco de dados!</b></html>", "Confirmação!", JOptionPane.INFORMATION_MESSAGE);
+												if (base != null && !base.isEmpty()) {
+													switch (_CONNECTION.getServerType()) {
+														case SQLConnectionManager.DB_ORACLE:
+														case SQLConnectionManager.DB_POSTGREE:
+														case SQLConnectionManager.DB_MSSQL:
+															sql = ("CREATE DATABASE [base];").replace("[base]", base);
+															break;
+														case SQLConnectionManager.DB_MYSQL:
+															sql = ("CREATE DATABASE `[base]`;").replace("[base]", base);
+															break;
+													}
+													runLater(new JThreadCommands(1, sql, MainWindow.getActiveTab()));
 												}
-											}
-										});
-										
-										popup.add(items[0]);		 // selecionar base
-										popup.add(new JSeparator()); // --
-										popup.add(items[1]);		 // mais opcoes -> remover base
-										popup.add(new JSeparator()); // --
-										popup.add(items[3]);		 // criar base
-										break;
+												break;
+											//
+										}
+									}
 								}
-								if (popup.getComponents().length > 0) {
-									popup.show(event.getComponent(), event.getX(), event.getY());
+							};
+							
+							for (JMenuItem item : items) {
+								if (item != null) {
+									item.addActionListener(action);
+									if (_CONNECTION.getServerType() == SQLConnectionManager.DB_POSTGREE) {
+										if (item.getName() != null && item.getName().equalsIgnoreCase("table_fields")) {
+											item.setEnabled(false);
+										}
+									}
 								}
 							}
 							
+							if (popup.getComponents().length > 0) {
+								popup.show(event.getComponent(), event.getX(), event.getY());
+							}
 						}
 					}
 					public void mouseEntered(MouseEvent arg0) { }
@@ -600,15 +727,43 @@ public class JQueryPane extends JTabPanel  {
 						super.setSize(d);
 					}
 				};
-				//_text_c2.getDocument().addUndoableEditListener();
-				_text_c2.getDocument().addDocumentListener(new DocumentListener(){
-					public void changedUpdate(DocumentEvent arg0) {
-					}
-					public void insertUpdate(DocumentEvent arg0) {
-					}
-					public void removeUpdate(DocumentEvent arg0) {
-					}
-				});
+				
+				// --
+				UndoManager undo_manager = new UndoManager();
+			    _text_c2.getDocument().addUndoableEditListener(new UndoableEditListener() {
+			        public void undoableEditHappened(UndoableEditEvent evt) {
+			            undo_manager.addEdit(evt.getEdit());
+			        }
+			    });
+			    _text_c2.getActionMap().put("UNDO_ACTION", new AbstractAction("UNDO_ACTION") {
+					private static final long serialVersionUID = 1L;
+					public void actionPerformed(ActionEvent evt) {
+			            try {
+			                if (undo_manager.canUndo()) {
+			                    undo_manager.undo();
+			                }
+			            }
+			            catch (CannotUndoException e) {
+			                e.printStackTrace();
+			            }
+			        }
+			    });
+			    _text_c2.getActionMap().put("REDO_ACTION", new AbstractAction("REDO_ACTION") {
+					private static final long serialVersionUID = 1L;
+					public void actionPerformed(ActionEvent evt) {
+			            try {
+			                if (undo_manager.canRedo()) {
+			                    undo_manager.redo();
+			                }
+			            }
+			            catch (CannotRedoException e) {
+			                e.printStackTrace();
+			            }
+			        }
+			    });
+			    _text_c2.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK), "UNDO_ACTION");
+			    _text_c2.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK), "REDO_ACTION");
+			    // --
 
 				_text_c2.setBorder(null);
 				_text_c2.setMargin(new Insets(5,5,5,5));
@@ -637,13 +792,8 @@ public class JQueryPane extends JTabPanel  {
 							t.start();
 						}						
 					}
-					public void keyReleased(KeyEvent event) {
-						if (!(event.getKeyCode() >= 37 && event.getKeyCode() <= 40)) {
-							//toggleEditor();
-						}
-						//System.out.println("... " + event.getKeyCode());
-					}
-					public void keyTyped(KeyEvent event) { }
+					public void keyReleased(KeyEvent event) { }
+					public void keyTyped(KeyEvent event)    { }
 				});
 				JScrollPane bar_c2 = new JScrollPane(_text_c2);
 				bar_c2.setAutoscrolls(true);			
@@ -688,20 +838,15 @@ public class JQueryPane extends JTabPanel  {
 				cel_d_def.weighty = 1;
 				cel_d_def.insets = new Insets(0,0,0,0);
 			
-				
-			
 				_table_d = new JTable();
 				_table_d.setGridColor(Color.WHITE);
 				_table_d.setShowGrid(true);
 				_table_d.setRowHeight(22);
 				_table_d.setIntercellSpacing(new Dimension(1, 1));
-//				_table_d.setDefaultRenderer(Object.class, table_render);
-				
 				_table_d.setDefaultRenderer(Object.class, _default_renderer);
 				_table_d.setDefaultRenderer(Date.class, _datetime_renderer);
 				_table_d.setDefaultRenderer(Integer.class, _number_renderer);
 				_table_d.setDefaultRenderer(Float.class, _number_renderer);
-				
 				_table_d.setSelectionForeground(Color.WHITE);
 				_table_d.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 				_table_d.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -747,7 +892,6 @@ public class JQueryPane extends JTabPanel  {
 					_CONNECTION.closeConnection();
 					_CONNECTION = null;
 				}
-				System.out.println("*** [Query] Conectando ao servidor... " + _PARAMETERS.getConnectionString());
 				_CONNECTION = new SQLConnectionManager(_PARAMETERS.getConnectorDriver(), _PARAMETERS.getConnectionString(), _PARAMETERS.getUser(), _PARAMETERS.getPass());
 				
 				// -- #01 - Atualiza informações sobre a conexão...
@@ -776,8 +920,14 @@ public class JQueryPane extends JTabPanel  {
 							}
 						}
 					}
-					updateDatabaseList(_CONNECTION.getDatabasesList());
-					updateStatus("<i><font color='green'><b>CONECTADO COM SUCESSO</b></font></i><br>\\:> <b>READY</b>");
+					Thread t = new Thread(new Runnable(){
+						public void run() {
+							List<String> bases = _CONNECTION.getDatabasesList();
+							updateDatabaseList(bases);
+							updateStatus("<i><font color='green'><b>CONECTADO COM SUCESSO</b></font></i><br>\\:> <b>READY</b> (" + bases.size() + " databases)");		
+						}
+					});
+					t.start();
 				}
 				else {
 					Exception exception = _CONNECTION.getLastError();
@@ -1133,7 +1283,7 @@ public class JQueryPane extends JTabPanel  {
 				
 		// <------------------------------------------------------------------------------------------------->
 		
-		public void loadQueryHistory(int page) {
+		public synchronized void loadQueryHistory(int page) {
 			switch(getHistorySize()) {
 				case -1:
 				case 0:
@@ -1155,17 +1305,14 @@ public class JQueryPane extends JTabPanel  {
 								System.out.println("-> " + i + " ~ [" + his.getRaw() + "] -> " + _current_history);
 							}
 							_text_c2.setText(his.getRaw() == null ? "" : his.getRaw().toString());
-							//toggleEditor();
 							updateQueryLabel();
 							MainWindow.repaintCurrentTab();
-							//MainWindow.fullRepaint();
 						}
 						else {
 							if (MainWindow._debug) {
 								System.out.println("=> " + i + " ~ " + his.getRaw());	
 							}
 						}
-						//++i;
 					}
 				}
 			}
@@ -1244,7 +1391,6 @@ public class JQueryPane extends JTabPanel  {
 				}
 			}
 			else if (data_type.equalsIgnoreCase("search")) {
-				// obtém registros da pesquisa atual.
 				QueryTableModel model = (QueryTableModel)_table_d.getModel();
 				data = model.getData();
 				for (int i = 0; i < data.length; i++) {
@@ -1388,7 +1534,7 @@ public class JQueryPane extends JTabPanel  {
 		
 		
 		public void updateTableList() {
-			SwingUtilities.invokeLater(new Runnable(){
+			Thread t = new Thread(new Runnable(){
 				public void run() {
 					DefaultTreeModel model = (DefaultTreeModel)_list_c1.getModel();
 					Object root = model.getRoot();
@@ -1418,12 +1564,19 @@ public class JQueryPane extends JTabPanel  {
 							row.add(item);
 				    	}
 					}
+					
 					if (model != null && model.getRoot() != null) {
-						model.setRoot((DefaultMutableTreeNode)model.getRoot());
+						//model.setRoot((DefaultMutableTreeNode)model.getRoot());
+						//model.setRoot((DefaultMutableTreeNode)root);
+						_list_c1.setModel(model);
 					}
+					
 					MainWindow.expandAll(_list_c1, getCurrentDatabaseTreePath(), true);
+					_list_c1.repaint();
+					_PARAMETERS.CollapsePane(_PARAMETERS.isCollapsed(), true); 
 				}
 			});
+			t.start();
 		}
 		
 		private TreePath getCurrentDatabaseTreePath() {
@@ -1468,46 +1621,45 @@ public class JQueryPane extends JTabPanel  {
 			return false;
 		}
 		
-		public void updateDatabaseList(final List<String> list) {
-			
-			//SwingUtilities.invokeLater(new Runnable(){
-			//	public void run() {
-					if (list != null) {
-						DefaultMutableTreeNode root = new DefaultMutableTreeNode(getParameters().getHost());
-						JCheckTreeNode item = null;
-						String database = null;
-					    for (String data : list) {
-					    	item = new JCheckTreeNode(data);
-					    	item.setType(JCheckTreeNode.DATABASE);
-					    	root.add(item);	
-					    }
-					    
-						DefaultTreeModel model = (DefaultTreeModel)_list_c1.getModel();
-						model.setRoot(root);
-						try {
-							database = (_CONNECTION == null || _CONNECTION.getDatabase() == null || _CONNECTION.getDatabase().isEmpty() ? null : _CONNECTION.getDatabase());
-							if (database != null) {
-								updateTableList();
+		public void updateDatabaseList(List<String> list) {
+			if (list != null) {
+				DefaultMutableTreeNode root = new DefaultMutableTreeNode(getParameters().getHost());
+				JCheckTreeNode item = null;
+				String database = null;
+			    for (String data : list) {
+			    	item = new JCheckTreeNode(data);
+			    	item.setType(JCheckTreeNode.DATABASE);
+			    	root.add(item);	
+			    }
+			    
+				DefaultTreeModel model = (DefaultTreeModel)_list_c1.getModel();
+				model.setRoot(root);
+				try {
+					database = (_CONNECTION == null || _CONNECTION.getDatabase() == null || _CONNECTION.getDatabase().isEmpty() ? null : _CONNECTION.getDatabase());
+					if (database != null) {
+						SwingUtilities.invokeAndWait(new Runnable(){
+							public void run(){
+								updateTableList();	
 							}
-						}
-						catch (Exception e) {
-							String message = null;
-							if (getConnection() == null || !getConnection().isConnected()) {
-								message = "A conexão não está ativa.";
-							}
-							else if (getConnection().getDatabase() == null || getConnection().getDatabase().isEmpty()) {
-								message = "Não há nenhuma database selecionada.";
-							}
-							if (message != null) {
-								JOptionPane.showMessageDialog(null, message, "JQueryAnalizer - Erro!", JOptionPane.OK_OPTION);
-							}
-							e.printStackTrace();
-						}
+						});
+						
 					}
-					updateDatabaseLabel();
-					//MainWindow.expandAll(_list_c1, true);
-			//	}
-			//});
+				}
+				catch (Exception e) {
+					String message = null;
+					if (getConnection() == null || !getConnection().isConnected()) {
+						message = "A conexão não está ativa.";
+					}
+					else if (getConnection().getDatabase() == null || getConnection().getDatabase().isEmpty()) {
+						message = "Não há nenhuma database selecionada.";
+					}
+					if (message != null) {
+						JOptionPane.showMessageDialog(null, message, "JQueryAnalizer - Erro!", JOptionPane.OK_OPTION);
+					}
+					e.printStackTrace();
+				}
+			}
+			updateDatabaseLabel();
 		}
 		
 		public void updateDatabaseLabel() {

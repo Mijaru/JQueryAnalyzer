@@ -15,6 +15,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -36,6 +37,7 @@ public class MR_NormalizaBasePublinet {
 	private int _TABLE_LIST_SIZE;
 	private Thread[] _THREAD_LIST = null;
 	private int _THREAD_PROCESS;
+	private Logger _log;
 	
 	/** -CONSTRUTOR- */
 	public MR_NormalizaBasePublinet(SQLConnectionManager connection) {
@@ -43,9 +45,11 @@ public class MR_NormalizaBasePublinet {
 	}
 
 	public void startPrograma() {
+		_log = MainWindow.getActiveLog();
+		
 		_FONT = new Font("Verdana", Font.ROMAN_BASELINE, 10);
 
-		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer [MRDigital] - Normaliza banco de dados para instalação do PUBLINET");
+		_FRAME = new JQDialog(MainWindow.getMainFrame(), "JQuery Analizer - Normaliza banco de dados para instalação do PUBLINET");
 		_FRAME.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		_FRAME.setPreferredSize(new Dimension(550, 400));
 		_FRAME.setMaximumSize(new Dimension(550, 400));
@@ -54,6 +58,7 @@ public class MR_NormalizaBasePublinet {
 		_FRAME.getGlassPane().setBackground(new Color(180, 191, 222));
 		_FRAME.setResizable(false);
 		_FRAME.getContentPane().setLayout(null);
+		_FRAME.setIconImages(MainWindow.getMainIconList());
 		_FRAME.addWindowListener(new WindowListener(){
 			public void windowActivated(WindowEvent arg0) { }
 			public void windowClosed(WindowEvent arg0) { }
@@ -101,14 +106,11 @@ public class MR_NormalizaBasePublinet {
 		_FRAME.add(copiar);
 		
 		copiar.addActionListener(new ActionListener() {
-
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				Clipboard teclado = Toolkit.getDefaultToolkit().getSystemClipboard();  
 				StringSelection selecao = new StringSelection(_LOG.getText()); 
 				teclado.setContents(selecao, null);  
 			}
-			
 		});
 
 		
@@ -123,6 +125,9 @@ public class MR_NormalizaBasePublinet {
 				_THREAD_PROCESS = 0;
 				_LOG.append("---\n");
 				_LOG.append("» Iniciando o processamento das tabelas:\n");
+				
+				if (_log != null) _log.warning("\t[»»»] Tool: { Check tables for Publinet }\tBEGIN");
+				
 				try {
 					List<String> list = _CONNECTION.getTables();
 					Iterator<String> iterator = list.iterator();
@@ -138,7 +143,11 @@ public class MR_NormalizaBasePublinet {
 						_THREAD_LIST[_THREAD_PROCESS].start();
 					}
 				}
-				catch (Exception e) { e.printStackTrace(); }
+				catch (Exception e) {
+					e.printStackTrace(); 
+				}
+				
+				
 			}
 		});
 
@@ -173,6 +182,9 @@ public class MR_NormalizaBasePublinet {
 			_LOG.append("         » "+((100.f * _TABLE_LIST_CHECKED / _TABLE_LIST_SIZE)+"00000").substring(0, 5)+"% Concluído - Processando a tabela `"+table.toUpperCase()+"`\n");
 			Exception pass = null;
 			try {
+				
+				if (_log != null) _log.warning("\t[***] Tool: { Check tables for Publinet }\tCheck table '" + table + "' structure");
+				
 				ResultSet rs = _CONNECTION.executeQuery("SELECT * FROM " + table + " WHERE 1=0");
 				ResultSetMetaData md = rs.getMetaData();
 				ColumnData dtinclusao = new ColumnData("DTINCLUSAO");
@@ -280,12 +292,16 @@ public class MR_NormalizaBasePublinet {
 							break;
 					}
 					pass = _CONNECTION.executeUpdate(sql);
+					if (_log != null) _log.info("\t[  *] Tool: { Check tables for Publinet }\tAdjust field 'DTINCLUSAO': [" + sql + "]" + (pass == null ? "" : "\n\t\t\t\tException: " + pass.getMessage()));
+				}
+				else {
+					if (_log != null) _log.info("\t[  ›] Tool: { Check tables for Publinet }\tThe 'DTINCLUSAO' field is correct");
 				}
 				if (pass == null) {
 					_LOG.append("                  » DTINCLUSAO : " + (dtinclusao.status == 0 ? "VÁLIDO" : (dtinclusao.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
 				}
 				else {
-					_LOG.append("                  » DTINCLUSAO > " + sql + " *** Exception: " + pass.getMessage() + " [" +pass.getCause()+ "].\n");	
+					_LOG.append("                  » DTINCLUSAO > " + sql + " *** Exception: " + pass.getMessage() + " [" +pass.getCause()+ "].\n");
 				}
 				
 				// ---
@@ -307,6 +323,10 @@ public class MR_NormalizaBasePublinet {
 							break;
 					}
 					pass = _CONNECTION.executeUpdate(sql);
+					if (_log != null) _log.info("\t[  *] Tool: { Check tables for Publinet }\tAdjust field 'USINCLUSAO': [" + sql + "]" + (pass == null ? "" : "\n\t\t\t\tException: " + pass.getMessage()));
+				}
+				else {
+					if (_log != null) _log.info("\t[  ›] Tool: { Check tables for Publinet }\tThe 'USINCLUSAO' field is correct");
 				}
 				if (pass == null) {
 					_LOG.append("                  » USINCLUSAO : " + (usinclusao.status == 0 ? "VÁLIDO" : (usinclusao.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
@@ -334,6 +354,10 @@ public class MR_NormalizaBasePublinet {
 							break;
 					}
 					pass = _CONNECTION.executeUpdate(sql);
+					if (_log != null) _log.info("\t[  *] Tool: { Check tables for Publinet }\tAdjust field 'USMANU': [" + sql + "]" + (pass == null ? "" : "\n\t\t\t\tException: " + pass.getMessage()));
+				}
+				else {
+					if (_log != null) _log.info("\t[  ›] Tool: { Check tables for Publinet }\tThe 'USMANU' field is correct");
 				}
 				if (pass == null) {
 					_LOG.append("                  » USMANU : " + (usmanu.status == 0 ? "VÁLIDO" : (usmanu.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
@@ -361,6 +385,10 @@ public class MR_NormalizaBasePublinet {
 							break;
 					}
 					pass = _CONNECTION.executeUpdate(sql);
+					if (_log != null) _log.info("\t[  *] Tool: { Check tables for Publinet }\tAdjust field 'DTMANU': [" + sql + "]" + (pass == null ? "" : "\n\t\t\t\tException: " + pass.getMessage()));
+				}
+				else {
+					if (_log != null) _log.info("\t[  ›] Tool: { Check tables for Publinet }\tThe 'DTMANU' field is correct");
 				}
 				if (pass == null) {
 					_LOG.append("                  » DTMANU : " + (dtmanu.status == 0 ? "VÁLIDO" : (dtmanu.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
@@ -388,6 +416,10 @@ public class MR_NormalizaBasePublinet {
 							break;
 					}
 					pass = _CONNECTION.executeUpdate(sql);
+					if (_log != null) _log.info("\t[  *] Tool: { Check tables for Publinet }\tAdjust field 'HRMANU': [" + sql + "]" + (pass == null ? "" : "\n\t\t\t\tException: " + pass.getMessage()));
+				}
+				else {
+					if (_log != null) _log.info("\t[  ›] Tool: { Check tables for Publinet }\tThe 'HRMANU' field is correct");
 				}
 				if (pass == null) {
 					_LOG.append("                  » HRMANU : " + (hrmanu.status == 0 ? "VÁLIDO" : (hrmanu.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
@@ -415,6 +447,10 @@ public class MR_NormalizaBasePublinet {
 							break;
 					}
 					pass = _CONNECTION.executeUpdate(sql);
+					if (_log != null) _log.info("\t[  *] Tool: { Check tables for Publinet }\tAdjust field 'OPMANU': [" + sql + "]" + (pass == null ? "" : "\n\t\t\t\tException: " + pass.getMessage()));
+				}
+				else {
+					if (_log != null) _log.info("\t[  ›] Tool: { Check tables for Publinet }\tThe 'OPMANU' field is correct");
 				}
 				if (pass == null) {
 					_LOG.append("                  » OPMANU : " + (opmanu.status == 0 ? "VÁLIDO" : (opmanu.status == 2 ? "ALTERADO" : "ADICIONADO")) + " ~ OK.\n");				
@@ -432,6 +468,9 @@ public class MR_NormalizaBasePublinet {
 			_LOG.setCaretPosition(_LOG.getText().length());
 			if (_THREAD_PROCESS + 1 >= _TABLE_LIST_SIZE) {
 				_LOG.append("[#] Verificação concluida!");
+				
+				if (_log != null) _log.warning("\t[«««] Tool: { Check tables for Publinet }\tEND");
+				
 				_THREAD_PROCESS = 0;
 			}
 			else {
